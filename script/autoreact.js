@@ -23,7 +23,9 @@ module.exports = {
       "good morning": "🌅",
       "good night": "🌙",
       "thanks": "🙏",
-      "prefix": "👾"
+      "prefix": "👾",
+      "vern": "🥰",
+      "pogi": "🫡"
     };
 
     const lowerBody = body.toLowerCase();
