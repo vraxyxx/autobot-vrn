@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Vern Auto Facebook Bot</title>
+  <title>Automated Facebook Bot</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="https://i.imgur.com/BNKq0fl.jpeg" type="image/jpeg" />
@@ -28,6 +28,8 @@
   </style>
 </head>
 <body>
+  <!-- Your existing content unchanged -->
+
   <div class="header">
     <img src="https://media1.giphy.com/media/v1.Y2lkPTZjMDliOTUybGQzdDFweTNpdDJ1bHVheDIwYjJyNmlrZ3NyMnk2ZGZ5MnRzbzlqMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/KFxqeA1uK0vBCokNkK/giphy.gif" alt="Banner" class="banner" />
     <img src="https://i.imgur.com/bfELRaR.jpeg" alt="Profile" class="profile-pic" />
@@ -97,6 +99,7 @@
     <p>Ping: <span id="ping"></span></p>
   </footer>
 
+  <!-- Audio and play button -->
   <audio id="background-audio" src="https://files.catbox.moe/1mp3f8.mp3" loop></audio>
   <button id="play-music-btn" title="Play Music">Play Music Jaiho 🎵</button>
 
@@ -105,14 +108,33 @@
     const audio = document.getElementById('background-audio');
     const playBtn = document.getElementById('play-music-btn');
 
+    // Hide button and play music on any user interaction (click, scroll, keypress)
+    function startAudioOnInteraction() {
+      audio.play().catch(() => {
+        // Ignore play errors if autoplay is blocked
+      });
+      playBtn.style.display = 'none';
+      // Remove listeners after first interaction
+      window.removeEventListener('click', startAudioOnInteraction);
+      window.removeEventListener('keydown', startAudioOnInteraction);
+      window.removeEventListener('scroll', startAudioOnInteraction);
+    }
+
+    // Show button if audio pauses
+    audio.addEventListener('pause', () => {
+      playBtn.style.display = 'block';
+    });
+
+    // Manual button click also plays music
     playBtn.addEventListener('click', () => {
       audio.play();
       playBtn.style.display = 'none';
     });
 
-    audio.addEventListener('pause', () => {
-      playBtn.style.display = 'block';
-    });
+    // Listen for any user interaction anywhere
+    window.addEventListener('click', startAudioOnInteraction);
+    window.addEventListener('keydown', startAudioOnInteraction);
+    window.addEventListener('scroll', startAudioOnInteraction);
   </script>
 </body>
 </html>
