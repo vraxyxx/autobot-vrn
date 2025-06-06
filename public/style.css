@@ -37,6 +37,15 @@ body {
   font-weight: 600;
   display: flex;
   align-items: center;
+
+  /* Animation */
+  opacity: 0;
+  transform: translateY(20px);
+  animation-fill-mode: forwards;
+  animation-name: fadeUp;
+  animation-duration: 0.8s;
+  animation-timing-function: ease-out;
+  animation-delay: 0.2s;
 }
 
 .verified-icon {
@@ -50,12 +59,30 @@ body {
   font-size: 0.9rem;
   display: inline-block;
   margin: 5px 0 15px;
+
+  /* Animation */
+  opacity: 0;
+  transform: translateY(20px);
+  animation-fill-mode: forwards;
+  animation-name: fadeUp;
+  animation-duration: 0.8s;
+  animation-timing-function: ease-out;
+  animation-delay: 0.4s;
 }
 
 .warning {
   color: #ccc;
   font-size: 0.9rem;
   max-width: 90%;
+
+  /* Animation */
+  opacity: 0;
+  transform: translateY(20px);
+  animation-fill-mode: forwards;
+  animation-name: fadeUp;
+  animation-duration: 0.8s;
+  animation-timing-function: ease-out;
+  animation-delay: 0.6s;
 }
 
 .button-container {
@@ -100,12 +127,30 @@ input {
   font-size: 1.3rem;
   font-weight: 600;
   margin-top: 2rem;
+
+  /* Animation */
+  opacity: 0;
+  transform: translateY(20px);
+  animation-fill-mode: forwards;
+  animation-name: fadeUp;
+  animation-duration: 0.8s;
+  animation-timing-function: ease-out;
+  animation-delay: 0.8s;
 }
 
 .terms {
   font-size: 0.9rem;
   margin-top: 1rem;
   color: #aaa;
+
+  /* Animation */
+  opacity: 0;
+  transform: translateY(20px);
+  animation-fill-mode: forwards;
+  animation-name: fadeUp;
+  animation-duration: 0.8s;
+  animation-timing-function: ease-out;
+  animation-delay: 1s;
 }
 
 .submit-btn {
@@ -127,7 +172,7 @@ input {
   margin-top: 1rem;
 }
 
-/* === Animate on scroll === */
+/* === Animate on scroll (your original) === */
 
 @keyframes fadeUp {
   from {
