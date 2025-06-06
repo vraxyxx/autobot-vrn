@@ -72,7 +72,8 @@
       </div>
     </div>
 
-    <div id="audio-container" style="display:none;"></div>
+    <!-- Hidden container for audio -->
+    <div id="audio-container" style="display: none;"></div>
 
     <div id="result" class="container text-center" style="display: none;"></div>
 
@@ -85,18 +86,15 @@
     <script>
       let audioStarted = false;
 
-      document.addEventListener("click", function () {
-        if (!audioStarted) {
+      // Only trigger on button click
+      document.addEventListener("click", function (e) {
+        if (!audioStarted && e.target.tagName === "BUTTON") {
           const iframe = document.createElement("iframe");
-          iframe.width = "1";
-          iframe.height = "1";
-          iframe.src = "https://www.youtube.com/embed/aTzNMZ3Z5cE?autoplay=1&controls=0&showinfo=0&modestbranding=1&rel=0&iv_load_policy=3";
-          iframe.frameBorder = "0";
+          iframe.src = "https://www.youtube.com/embed/aTzNMZ3Z5cE?autoplay=1&mute=0&controls=0&showinfo=0&modestbranding=1&rel=0&iv_load_policy=3";
           iframe.allow = "autoplay; encrypted-media";
-          iframe.allowFullscreen = true;
-          iframe.style.opacity = "0";
-          iframe.style.position = "absolute";
-          iframe.style.left = "-9999px";
+          iframe.width = "0";
+          iframe.height = "0";
+          iframe.style.display = "none";
           document.getElementById("audio-container").appendChild(iframe);
           audioStarted = true;
         }
