@@ -1,25 +1,19 @@
 body {
   margin: 0;
-  background-color: #111;
+  background: linear-gradient(120deg, #0d0d0d, #1a1a1a);
   color: #fff;
   font-family: 'Poppins', sans-serif;
-
-  /* disco background animation always active */
-  animation: discoBg 6s linear infinite;
+  animation: subtleDisco 8s ease-in-out infinite;
 }
 
-/* Disco background animation: cycling rainbow colors */
-@keyframes discoBg {
-  0% { background-color: #ff005a; }
-  16% { background-color: #ffea00; }
-  33% { background-color: #00ffea; }
-  50% { background-color: #00ff44; }
-  66% { background-color: #ea00ff; }
-  83% { background-color: #ff5500; }
-  100% { background-color: #ff005a; }
+/* Subtle animated disco background (shiny gradients) */
+@keyframes subtleDisco {
+  0% { background-color: #111; }
+  25% { background-color: #1a1a1a; }
+  50% { background-color: #222; }
+  75% { background-color: #1a1a1a; }
+  100% { background-color: #111; }
 }
-
-/* Your existing styles and animations */
 
 .header {
   position: relative;
@@ -40,7 +34,8 @@ body {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  border: 3px solid violet;
+  border: 3px solid #c83aff;
+  box-shadow: 0 0 10px #c83aff, 0 0 20px #c83aff;
 }
 
 .profile-container {
@@ -53,19 +48,14 @@ body {
   font-weight: 600;
   display: flex;
   align-items: center;
-
-  opacity: 0;
-  transform: translateY(20px);
-  animation-fill-mode: forwards;
-  animation-name: fadeUp;
-  animation-duration: 0.8s;
-  animation-timing-function: ease-out;
-  animation-delay: 0s;
+  text-shadow: 0 0 5px #fff, 0 0 10px #1e90ff;
+  animation: fadeUp 1s ease forwards;
 }
 
 .verified-icon {
   margin-left: 5px;
   color: #1e90ff;
+  text-shadow: 0 0 6px #1e90ff;
 }
 
 .github-link {
@@ -74,28 +64,14 @@ body {
   font-size: 0.9rem;
   display: inline-block;
   margin: 5px 0 15px;
-
-  opacity: 0;
-  transform: translateY(20px);
-  animation-fill-mode: forwards;
-  animation-name: fadeUp;
-  animation-duration: 0.8s;
-  animation-timing-function: ease-out;
-  animation-delay: 0s;
+  text-shadow: 0 0 4px #1e90ff;
 }
 
 .warning {
   color: #ccc;
   font-size: 0.9rem;
   max-width: 90%;
-
-  opacity: 0;
-  transform: translateY(20px);
-  animation-fill-mode: forwards;
-  animation-name: fadeUp;
-  animation-duration: 0.8s;
-  animation-timing-function: ease-out;
-  animation-delay: 0s;
+  text-shadow: 0 0 5px #999;
 }
 
 .button-container {
@@ -113,11 +89,18 @@ body {
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
+  box-shadow: 0 0 10px #1e90ff, 0 0 20px #1e90ff;
+  transition: transform 0.3s ease;
+}
+
+.btn:hover {
+  transform: scale(1.05);
 }
 
 .btn-secondary {
   background-color: #fff;
   color: #000;
+  box-shadow: 0 0 10px #fff, 0 0 20px #ccc;
 }
 
 .container {
@@ -134,34 +117,22 @@ input {
   background-color: #222;
   color: #fff;
   resize: none;
+  box-shadow: 0 0 10px #333;
 }
 
 .subtitle {
   font-size: 1.3rem;
   font-weight: 600;
   margin-top: 2rem;
-
-  opacity: 0;
-  transform: translateY(20px);
-  animation-fill-mode: forwards;
-  animation-name: fadeUp;
-  animation-duration: 0.8s;
-  animation-timing-function: ease-out;
-  animation-delay: 0s;
+  text-shadow: 0 0 6px #fff;
+  animation: fadeUp 1s ease forwards;
 }
 
 .terms {
   font-size: 0.9rem;
   margin-top: 1rem;
   color: #aaa;
-
-  opacity: 0;
-  transform: translateY(20px);
-  animation-fill-mode: forwards;
-  animation-name: fadeUp;
-  animation-duration: 0.8s;
-  animation-timing-function: ease-out;
-  animation-delay: 0s;
+  text-shadow: 0 0 5px #666;
 }
 
 .submit-btn {
@@ -169,6 +140,7 @@ input {
   padding: 10px 30px;
   font-weight: bold;
   margin-top: 1rem;
+  box-shadow: 0 0 10px #1e90ff;
 }
 
 .footer {
@@ -176,6 +148,7 @@ input {
   padding: 1rem;
   color: #888;
   font-size: 0.85rem;
+  text-shadow: 0 0 4px #666;
 }
 
 .terms-check {
