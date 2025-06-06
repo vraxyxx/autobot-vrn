@@ -45,7 +45,7 @@ body {
   animation-name: fadeUp;
   animation-duration: 0.8s;
   animation-timing-function: ease-out;
-  animation-delay: 0.2s;
+  animation-delay: 0s;
 }
 
 .verified-icon {
@@ -67,7 +67,7 @@ body {
   animation-name: fadeUp;
   animation-duration: 0.8s;
   animation-timing-function: ease-out;
-  animation-delay: 0.4s;
+  animation-delay: 0s;
 }
 
 .warning {
@@ -82,7 +82,7 @@ body {
   animation-name: fadeUp;
   animation-duration: 0.8s;
   animation-timing-function: ease-out;
-  animation-delay: 0.6s;
+  animation-delay: 0s;
 }
 
 .button-container {
@@ -135,7 +135,7 @@ input {
   animation-name: fadeUp;
   animation-duration: 0.8s;
   animation-timing-function: ease-out;
-  animation-delay: 0.8s;
+  animation-delay: 0s;
 }
 
 .terms {
@@ -150,7 +150,7 @@ input {
   animation-name: fadeUp;
   animation-duration: 0.8s;
   animation-timing-function: ease-out;
-  animation-delay: 1s;
+  animation-delay: 0s;
 }
 
 .submit-btn {
