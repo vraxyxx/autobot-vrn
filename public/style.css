@@ -3,7 +3,23 @@ body {
   background-color: #111;
   color: #fff;
   font-family: 'Poppins', sans-serif;
+
+  /* disco background animation always active */
+  animation: discoBg 6s linear infinite;
 }
+
+/* Disco background animation: cycling rainbow colors */
+@keyframes discoBg {
+  0% { background-color: #ff005a; }
+  16% { background-color: #ffea00; }
+  33% { background-color: #00ffea; }
+  50% { background-color: #00ff44; }
+  66% { background-color: #ea00ff; }
+  83% { background-color: #ff5500; }
+  100% { background-color: #ff005a; }
+}
+
+/* Your existing styles and animations */
 
 .header {
   position: relative;
@@ -38,7 +54,6 @@ body {
   display: flex;
   align-items: center;
 
-  /* Animation */
   opacity: 0;
   transform: translateY(20px);
   animation-fill-mode: forwards;
@@ -60,7 +75,6 @@ body {
   display: inline-block;
   margin: 5px 0 15px;
 
-  /* Animation */
   opacity: 0;
   transform: translateY(20px);
   animation-fill-mode: forwards;
@@ -75,7 +89,6 @@ body {
   font-size: 0.9rem;
   max-width: 90%;
 
-  /* Animation */
   opacity: 0;
   transform: translateY(20px);
   animation-fill-mode: forwards;
@@ -128,7 +141,6 @@ input {
   font-weight: 600;
   margin-top: 2rem;
 
-  /* Animation */
   opacity: 0;
   transform: translateY(20px);
   animation-fill-mode: forwards;
@@ -143,7 +155,6 @@ input {
   margin-top: 1rem;
   color: #aaa;
 
-  /* Animation */
   opacity: 0;
   transform: translateY(20px);
   animation-fill-mode: forwards;
@@ -172,7 +183,7 @@ input {
   margin-top: 1rem;
 }
 
-/* === Animate on scroll (your original) === */
+/* === Animate on scroll === */
 
 @keyframes fadeUp {
   from {
