@@ -85,14 +85,12 @@
     <script>
       const audio = document.getElementById("background-audio");
 
-      // Try to autoplay muted on page load (most browsers allow this)
+      // Autoplay muted audio on page load
       window.addEventListener("load", () => {
-        audio.play().catch(() => {
-          // Autoplay failed, probably due to browser restrictions
-        });
+        audio.play().catch(() => {});
       });
 
-      // On first user interaction, unmute and play audio
+      // On first user interaction, unmute and play sound
       function enableAudio() {
         if (audio.muted) {
           audio.muted = false;
