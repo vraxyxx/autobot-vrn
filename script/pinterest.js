@@ -3,8 +3,8 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "pinterest",
-    version: "1.0.0",
-    author: "You",
+    version: "1.0.1",
+    author: "vern",
     description: "Search Pinterest images by query and send a random result.",
     cooldowns: 5,
     dependencies: {
@@ -27,9 +27,19 @@ module.exports = {
 
     try {
       const response = await axios.get(`https://api.ferdev.my.id/search/pinterest?query=${query}`);
-      const data = response.data;
 
-      if (!data || !Array.isArray(data.data) || data.data.length === 0) {
+      // Basic validation of API response structure
+      if (!response.data || !Array.isArray(response.data.data)) {
+        return api.sendMessage(
+          "❌ Unexpected API response format.",
+          threadID,
+          messageID
+        );
+      }
+
+      const images = response.data.data;
+
+      if (images.length === 0) {
         return api.sendMessage(
           `❌ No images found for "${args.join(" ")}".`,
           threadID,
@@ -37,9 +47,19 @@ module.exports = {
         );
       }
 
-      // Pick a random image from results
-      const randomImage = data.data[Math.floor(Math.random() * data.data.length)];
+      // Select a random image URL
+      const randomImage = images[Math.floor(Math.random() * images.length)];
 
+      // Check if global.utils.getStream is available
+      if (typeof global.utils?.getStream !== "function") {
+        return api.sendMessage(
+          "❌ Image streaming utility not available.",
+          threadID,
+          messageID
+        );
+      }
+
+      // Send message with image attachment stream
       await api.sendMessage(
         {
           body: `🎉 Pinterest result for: ${args.join(" ")}`,
@@ -51,7 +71,7 @@ module.exports = {
 
     } catch (error) {
       console.error("Error in pinterest command:", error);
-      api.sendMessage(
+      return api.sendMessage(
         `❌ Failed to fetch Pinterest images.\nError: ${error.message}`,
         threadID,
         messageID
