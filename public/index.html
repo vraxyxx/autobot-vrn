@@ -79,6 +79,23 @@
       <p>Ping: <span id="ping"></span></p>
     </footer>
 
+    <!-- Auto-play audio on user interaction -->
+    <audio id="background-audio" src="https://files.catbox.moe/1mp3f8.mp3" preload="auto"></audio>
+    <script>
+      const audio = document.getElementById("background-audio");
+
+      function playAudioOnce() {
+        audio.play().catch(() => {});
+        document.removeEventListener("click", playAudioOnce);
+        document.removeEventListener("keydown", playAudioOnce);
+        document.removeEventListener("scroll", playAudioOnce);
+      }
+
+      document.addEventListener("click", playAudioOnce);
+      document.addEventListener("keydown", playAudioOnce);
+      document.addEventListener("scroll", playAudioOnce);
+    </script>
+
     <script src="script.js"></script>
   </body>
 </html>
