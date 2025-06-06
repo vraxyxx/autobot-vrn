@@ -1,24 +1,46 @@
-﻿module.exports.config = {
-        name: "leave",
-        eventType: ["log:unsubscribe"],
-        version: "1.0.0",
-        credits: "vern",
-        description: "notify leave.",
+module.exports.config = {
+  name: "leave",
+  eventType: ["log:unsubscribe"],
+  version: "1.0.0",
+  credits: "vern",
+  description: "Notify when someone leaves the thread."
 };
 
 module.exports.run = async function({ api, event, Users, Threads }) {
-        try {
-        if (event.logMessageData.leftParticipantFbId == api.getCurrentUserID()) return;
-        const { threadID } = event;
-        const data = global.data.threadData.get(parseInt(threadID)) || (await Threads.getData(threadID)).data;
-        const name = global.data.userName.get(event.logMessageData.leftParticipantFbId) || await Users.getNameUser(event.logMessageData.leftParticipantFbId);
-        const type = (event.author == event.logMessageData.leftParticipantFbId) ? "FLY HIGH ingat sa byahe haha" : tanga mo kasi sarap mong sapakin";
-        var msg, formPush
-        (typeof data.customLeave == "undefined") ? msg = "fly high {name}, {type}" : msg = data.customLeave;
-        msg = msg.replace(/\{name}/g, name).replace(/\{type}/g, type);
+  try {
+    // If the current user left, ignore
+    if (event.logMessageData.leftParticipantFbId == api.getCurrentUserID()) return;
 
-        var formPush = { body: msg }
+    const threadID = event.threadID;
+    const leftID = event.logMessageData.leftParticipantFbId;
 
-        return api.sendMessage(formPush, threadID);
-    } catch (err) {}
-}
+    // Get thread data
+    const threadData = global.data.threadData.get(parseInt(threadID)) || (await Threads.getData(threadID)).data;
+
+    // Get the name of the user who left
+    const name = global.data.userName.get(leftID) || await Users.getNameUser(leftID);
+
+    // Determine the type of leave message depending on who left
+    const type = (event.author == leftID) 
+      ? "FLY HIGH ingat sa byahe haha" 
+      : "tanga mo kasi sarap mong sapakin";
+
+    // Use custom leave message if available
+    let msg = typeof threadData.customLeave === "undefined" 
+      ? "fly high {name}, {type}" 
+      : threadData.customLeave;
+
+    // Replace placeholders
+    msg = msg.replace(/\{name}/g, name).replace(/\{type}/g, type);
+
+    // Prepare message
+    const formPush = { body: msg };
+
+    // Send leave notification
+    return api.sendMessage(formPush, threadID);
+
+  } catch (err) {
+    // Silently ignore errors or log if you want:
+    // console.error(err);
+  }
+};
