@@ -12,30 +12,28 @@ module.exports = {
   async execute(api, event, args, commands, prefix, admins, appState, sendMessage) {
     const { threadID, messageID, messageReply, attachments, senderID } = event;
 
-    // No input provided
-    if (args.length === 0 && !messageReply && attachments.length === 0) {
+    if (args.length === 0 && (!messageReply || !messageReply.attachments?.length) && attachments.length === 0) {
       return sendMessage(api, {
         threadID,
         message: '⚠️ Please provide a question or reply to an image.\n\nExample:\n/chatgpt What is AI?\n(Or reply to an image with /chatgpt)'
       }, messageID);
     }
 
-    const query = args.join(' ');
+    const query = args.join(' ') || "Analyze this image.";
     let imageUrl = null;
 
-    // Check for image in reply
-    if (messageReply && messageReply.attachments?.length > 0) {
+    // Extract image URL from reply
+    if (messageReply?.attachments?.length > 0) {
       const replyImage = messageReply.attachments.find(att => att.type === 'photo');
-      if (replyImage) imageUrl = replyImage.url;
+      if (replyImage?.url) imageUrl = replyImage.url;
     }
 
-    // Check for direct image attachment
+    // Extract image URL from current attachments
     if (!imageUrl && attachments.length > 0) {
-      const attachmentImage = attachments.find(att => att.type === 'photo');
-      if (attachmentImage) imageUrl = attachmentImage.url;
+      const attachedImage = attachments.find(att => att.type === 'photo');
+      if (attachedImage?.url) imageUrl = attachedImage.url;
     }
 
-    // Prepare API request
     const imageParam = imageUrl ? `&imageUrl=${encodeURIComponent(imageUrl)}` : '';
     const apiUrl = `https://kaiz-apis.gleeze.com/api/gpt-4o-pro?ask=${encodeURIComponent(query)}&uid=${senderID}${imageParam}`;
 
@@ -49,14 +47,13 @@ module.exports = {
         }, messageID);
       }
 
-      const aiResponse = response.data.response;
+      const aiResponse = response.data.response.trim();
 
-      // Extract image from response (if any)
+      // Extract possible image URL
       const imageMatch = aiResponse.match(/(https?:\/\/[^\s)]+)/);
-      const extractedImageUrl = imageMatch ? imageMatch[1] : null;
+      const extractedImageUrl = imageMatch?.[1];
 
-      // Send image if it's from DALL·E-style output
-      if (extractedImageUrl && extractedImageUrl.includes('oaidalleapiprodscus.blob.core.windows.net')) {
+      if (extractedImageUrl && extractedImageUrl.includes("oaidalleapiprodscus.blob.core.windows.net")) {
         await sendMessage(api, {
           threadID,
           attachment: {
@@ -67,13 +64,13 @@ module.exports = {
             }
           }
         }, messageID);
-      } else {
-        // Send plain text response
-        await sendMessage(api, {
-          threadID,
-          message: `🤖 **GPT-4o Pro Response:**\n\n${aiResponse}`
-        }, messageID);
       }
+
+      // Send GPT response message
+      await sendMessage(api, {
+        threadID,
+        message: `🤖 𝗚𝗣𝗧-𝟰𝗼 𝗣𝗿𝗼:\n\n${aiResponse}`
+      }, messageID);
 
     } catch (err) {
       console.error('[GPT-4o ERROR]', err.message || err);
