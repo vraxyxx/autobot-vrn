@@ -13,14 +13,14 @@ module.exports = {
   },
 
   onMessage: async function ({ api, event }) {
-    // No auto trigger needed here, just the run command.
+    // No auto trigger for this command
   },
 
   run: async function ({ api, event }) {
     const { threadID, messageID } = event;
 
     try {
-      // Replace with your actual API URL if different
+      // TODO: Replace with your actual API URL that returns an array of image URLs
       const response = await axios.get("https://your-api-url.com/endpoint");
       const data = response.data;
 
@@ -32,14 +32,14 @@ module.exports = {
         );
       }
 
-      // Pick a random image URL from the array
+      // Select a random image from the array
       const randomImage = data.data[Math.floor(Math.random() * data.data.length)];
 
       // Send the image as an attachment with a message
       await api.sendMessage(
         {
           body: "🎉 Here's a random image for you!",
-          attachment: await global.utils.getStream(randomImage) // autobot-vrn utility to fetch stream from URL
+          attachment: await global.utils.getStream(randomImage)
         },
         threadID,
         messageID
