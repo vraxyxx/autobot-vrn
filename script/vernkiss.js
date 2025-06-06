@@ -1,10 +1,14 @@
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
+
 module.exports.config = {
   name: "vernkiss",
   version: "1.2.0",
   credits: "vern",
   description: "Send lots of kissing emojis with a random kissing GIF.",
   commandCategory: "Fun",
-  usages: "[optional mention]",
+  usages: "[optional @mention]",
   cooldowns: 5
 };
 
@@ -24,24 +28,33 @@ const gifs = [
 module.exports.run = async function({ api, event, args, Users }) {
   try {
     let mentionText = "";
-    if (args.length > 0) {
-      const mentionID = event.mentions ? Object.keys(event.mentions)[0] : null;
-      if (mentionID) {
-        const name = await Users.getNameUser(mentionID);
-        mentionText = `${name}, `;
-      }
+    let mentions = [];
+
+    if (Object.keys(event.mentions).length > 0) {
+      const mentionID = Object.keys(event.mentions)[0];
+      const name = await Users.getNameUser(mentionID);
+      mentionText = `${name}, `;
+      mentions.push({ id: mentionID, tag: name });
     }
 
     const kisses = "😘😗😙😚💋💕💖".repeat(3);
     const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
 
+    const filePath = path.join(__dirname, "cache", `kiss.gif`);
+    const response = await axios.get(randomGif, { responseType: "arraybuffer" });
+    fs.writeFileSync(filePath, Buffer.from(response.data, "binary"));
+
     const message = {
       body: `${mentionText}Sending you lots of kisses! ${kisses}`,
-      attachment: await global.utils.getStream(randomGif)
+      attachment: fs.createReadStream(filePath),
+      mentions
     };
 
-    return api.sendMessage(message, event.threadID);
+    return api.sendMessage(message, event.threadID, () => {
+      fs.unlinkSync(filePath); // Clean up
+    });
   } catch (error) {
-    console.error(error);
+    console.error("vernkiss error:", error);
+    return api.sendMessage("❌ Failed to send kiss gif.", event.threadID);
   }
 };
