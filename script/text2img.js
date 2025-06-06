@@ -26,6 +26,7 @@ module.exports = {
     const text = encodeURIComponent(args.join(" "));
 
     try {
+      // Request image generation from the external API
       const response = await axios.get(`https://api.ferdev.my.id/tools/text2img?text=${text}`);
       const data = response.data;
 
@@ -39,6 +40,7 @@ module.exports = {
 
       const imageUrl = data.result;
 
+      // Send the generated image as an attachment
       return api.sendMessage(
         {
           body: "✅ Image generated from text:",
@@ -50,7 +52,7 @@ module.exports = {
 
     } catch (error) {
       console.error("Error in text2img command:", error);
-      api.sendMessage(
+      return api.sendMessage(
         `❌ Failed to generate image.\nError: ${error.message}`,
         threadID,
         messageID
