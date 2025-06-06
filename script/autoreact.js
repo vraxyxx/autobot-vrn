@@ -1,58 +1,37 @@
 module.exports = {
+  name: "autoReact",
+  description: "Automatically reacts to certain keywords in messages.",
+  author: "vern",
+  handleEvent: true,
 
-    name: "autoReact",
+  async handleEvent({ api, event }) {
+    const { messageID, body, threadID } = event;
 
-    handleEvent: true,
+    if (!body) return;
 
-    async handleEvent({ api, event }) {
+    // Define keywords and corresponding reactions
+    const reactions = {
+      "hello": "👋",
+      "hi": "👋",
+      "lol": "😂",
+      "haha": "🤣",
+      "love": "❤️",
+      "wow": "😲",
+      "sad": "😢",
+      "angry": "😡",
+      "bot": "🤖",
+      "good morning": "🌅",
+      "good night": "🌙",
+      "thanks": "🙏",
+      "prefix": "👾"
+    };
 
-        const { messageID, body, threadID } = event;
+    const lowerBody = body.toLowerCase();
 
-        if (!body) return;
-
-
-        const reactions = {
-
-            "hello": "👋",
-
-            "hi": "👋",
-
-            "lol": "😂",
-
-            "haha": "🤣",
-
-            "love": "❤️",
-
-            "wow": "😲",
-
-            "sad": "😢",
-
-            "angry": "😡",
-
-            "bot": "🤖",
-
-            "good morning": "🌅",
-
-            "good night": "🌙",
-
-            "thanks": "🙏",
-
-            "prefix": "👾"
-
-        };
-
-
-
-        for (const keyword in reactions) {
-
-            if (body.toLowerCase().includes(keyword)) {
-
-                return api.setMessageReaction(reactions[keyword], messageID, () => {}, true);
-
-            }
-
-        }
-
+    for (const keyword in reactions) {
+      if (lowerBody.includes(keyword)) {
+        return api.setMessageReaction(reactions[keyword], messageID, () => {}, true);
+      }
     }
-
+  }
 };
