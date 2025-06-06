@@ -1,140 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <title>Automated Facebook Bot</title>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" href="https://i.imgur.com/BNKq0fl.jpeg" type="image/jpeg" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
-  <style>
-    #play-music-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #1e90ff;
-      border: none;
-      border-radius: 30px;
-      color: white;
-      padding: 10px 20px;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 0 10px #1e90ff;
-      z-index: 9999;
-      font-family: 'Poppins', sans-serif;
-      user-select: none;
-    }
-  </style>
-</head>
-<body>
-  <!-- Your existing content unchanged -->
-
-  <div class="header">
-    <img src="https://media1.giphy.com/media/v1.Y2lkPTZjMDliOTUybGQzdDFweTNpdDJ1bHVheDIwYjJyNmlrZ3NyMnk2ZGZ5MnRzbzlqMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/KFxqeA1uK0vBCokNkK/giphy.gif" alt="Banner" class="banner" />
-    <img src="https://i.imgur.com/bfELRaR.jpeg" alt="Profile" class="profile-pic" />
-  </div>
-
-  <div class="profile-container">
-    <div class="profile-name">
-      Vernだ <i class="fas fa-check-circle verified-icon"></i>
-    </div>
-    <a href="https://github.com/vranyxx" class="github-link" target="_blank">
-      <i class="fab fa-github"></i> github.com/vranyxx
-    </a>
-    <p class="warning">
-      Just a reminder by @vern, using this bot can cause suspension, locked of your account so much better to use your dummy account. If there's a trouble about using this site just message me with no hesitation, thanks and enjoy!.
-    </p>
-  </div>
-
-  <div class="button-container">
-    <button class="btn">View profile</button>
-    <button class="btn btn-secondary">View page</button>
-  </div>
-
-  <div class="container">
-    <h2 class="subtitle">Facebook Appstate</h2>
-    <form id="json-form" onsubmit="submitForm(event)">
-      <textarea id="json-data" placeholder="Paste your appstate here"></textarea>
-    </form>
-
-    <h2 class="subtitle">Bot Details</h2>
-    <input type="text" placeholder="username" />
-    <input type="text" placeholder="password" />
-    <input type="text" placeholder="bot name (ex: vern)" />
-
-    <div id="listOfCommands">
-      <h2 class="subtitle">Select your commands</h2>
-      <button class="btn" onclick="selectAllCommands()">Select all commands</button>
+  <head>
+    <title>Automated Facebook Bot</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="https://i.imgur.com/BNKq0fl.jpeg" type="image/jpeg" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <img src="https://media1.giphy.com/media/v1.Y2lkPTZjMDliOTUybGQzdDFweTNpdDJ1bHVheDIwYjJyNmlrZ3NyMnk2ZGZ5MnRzbzlqMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/KFxqeA1uK0vBCokNkK/giphy.gif" alt="Banner" class="banner" />
+      <img src="https://i.imgur.com/bfELRaR.jpeg" alt="Profile" class="profile-pic" />
     </div>
 
-    <div id="listOfCommandsEvent">
-      <h2 class="subtitle">Select your event commands</h2>
-      <button class="btn" onclick="selectAllEvents()">Select all events</button>
+    <div class="profile-container">
+      <div class="profile-name">
+        Vernだ <i class="fas fa-check-circle verified-icon"></i>
+      </div>
+      <a href="https://github.com/vranyxx" class="github-link" target="_blank">
+        <i class="fab fa-github"></i> github.com/vranyxx
+      </a>
+      <p class="warning">
+        Just a reminder by @vern, using this bot can cause suspension, locked of your account so much better to use your dummy account. If there's a trouble about using this site just message me with no hesitation, thanks and enjoy!.
+      </p>
     </div>
 
-    <div id="prefixOfCommands">
-      <h2 class="subtitle">Enter prefix (optional)</h2>
-      <input type="text" id="inputOfPrefix" />
+    <div class="button-container">
+      <button class="btn">View profile</button>
+      <button class="btn btn-secondary">View page</button>
     </div>
 
-    <div id="adminOfCommands">
-      <h2 class="subtitle">Enter UID (optional)</h2>
-      <input type="text" id="inputOfAdmin" />
+    <div class="container">
+      <h2 class="subtitle">Facebook Appstate</h2>
+      <form id="json-form" onsubmit="submitForm(event)">
+        <textarea id="json-data" placeholder="Paste your appstate here"></textarea>
+      </form>
+
+      <h2 class="subtitle">Bot Details</h2>
+      <input type="text" placeholder="username" />
+      <input type="text" placeholder="password" />
+      <input type="text" placeholder="bot name (ex: vern)" />
+
+      <div id="listOfCommands">
+        <h2 class="subtitle">Select your commands</h2>
+        <button class="btn" onclick="selectAllCommands()">Select all commands</button>
+      </div>
+
+      <div id="listOfCommandsEvent">
+        <h2 class="subtitle">Select your event commands</h2>
+        <button class="btn" onclick="selectAllEvents()">Select all events</button>
+      </div>
+
+      <div id="prefixOfCommands">
+        <h2 class="subtitle">Enter prefix (optional)</h2>
+        <input type="text" id="inputOfPrefix" />
+      </div>
+
+      <div id="adminOfCommands">
+        <h2 class="subtitle">Enter UID (optional)</h2>
+        <input type="text" id="inputOfAdmin" />
+      </div>
+
+      <label class="terms-check">
+        <input type="checkbox" id="agreeCheckbox" /> I have read and agree to the Terms and Conditions.
+      </label>
+
+      <div class="text-center">
+        <button class="btn submit-btn" onclick="State()" disabled id="submitButton">Submit</button>
+      </div>
     </div>
 
-    <label class="terms-check">
-      <input type="checkbox" id="agreeCheckbox" /> I have read and agree to the Terms and Conditions.
-    </label>
+    <div id="result" class="container text-center" style="display: none;"></div>
 
-    <div class="text-center">
-      <button class="btn submit-btn" onclick="State()" disabled id="submitButton">Submit</button>
-    </div>
-  </div>
+    <footer class="footer">
+      <p>Time: <span id="time"></span></p>
+      <p>Ping: <span id="ping"></span></p>
+    </footer>
 
-  <div id="result" class="container text-center" style="display: none;"></div>
-
-  <footer class="footer">
-    <p>Time: <span id="time"></span></p>
-    <p>Ping: <span id="ping"></span></p>
-  </footer>
-
-  <!-- Audio and play button -->
-  <audio id="background-audio" src="https://files.catbox.moe/1mp3f8.mp3" loop></audio>
-  <button id="play-music-btn" title="Play Music">Play Music Jaiho 🎵</button>
-
-  <script src="script.js"></script>
-  <script>
-    const audio = document.getElementById('background-audio');
-    const playBtn = document.getElementById('play-music-btn');
-
-    // Hide button and play music on any user interaction (click, scroll, keypress)
-    function startAudioOnInteraction() {
-      audio.play().catch(() => {
-        // Ignore play errors if autoplay is blocked
-      });
-      playBtn.style.display = 'none';
-      // Remove listeners after first interaction
-      window.removeEventListener('click', startAudioOnInteraction);
-      window.removeEventListener('keydown', startAudioOnInteraction);
-      window.removeEventListener('scroll', startAudioOnInteraction);
-    }
-
-    // Show button if audio pauses
-    audio.addEventListener('pause', () => {
-      playBtn.style.display = 'block';
-    });
-
-    // Manual button click also plays music
-    playBtn.addEventListener('click', () => {
-      audio.play();
-      playBtn.style.display = 'none';
-    });
-
-    // Listen for any user interaction anywhere
-    window.addEventListener('click', startAudioOnInteraction);
-    window.addEventListener('keydown', startAudioOnInteraction);
-    window.addEventListener('scroll', startAudioOnInteraction);
-  </script>
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>
