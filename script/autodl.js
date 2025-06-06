@@ -10,7 +10,7 @@ module.exports = {
     description: "Automatically downloads videos from URLs in messages. Toggle with /autodl [on|off] (Admin only).",
     cooldowns: 5,
     dependencies: {
-      "axios": "",
+      axios: "",
       "fs-extra": ""
     }
   },
@@ -18,18 +18,27 @@ module.exports = {
   onMessage: async function ({ api, event, usersData }) {
     const { threadID, messageID, body, type } = event;
 
+    // Ensure body exists
+    if (!body) return;
+
     // Path to config file
     const configPath = path.resolve(__dirname, "../config/autodl_config.json");
 
     let config = { enabled: true };
-    if (fs.existsSync(configPath)) {
-      config = await fs.readJson(configPath);
-    } else {
-      await fs.writeJson(configPath, config);
+    try {
+      if (fs.existsSync(configPath)) {
+        config = await fs.readJson(configPath);
+      } else {
+        await fs.writeJson(configPath, config);
+      }
+    } catch (err) {
+      console.error("Error reading/writing config:", err);
+      return;
     }
 
     if (!config.enabled) return;
 
+    // Only proceed for normal messages or replies
     if (type !== "message" && type !== "message_reply") return;
 
     const urlRegex = /(https?:\/\/[^\s]+)/;
@@ -40,136 +49,104 @@ module.exports = {
 
     try {
       await api.sendMessage(
-        `════『 𝗔𝗨𝗧𝗢𝗗𝗟 』════\n\n⏳ Downloading media from URL: ${url}\n\n> Thank you for using our bot`,
+        `════『 𝗔𝗨𝗧𝗢𝗗𝗟 』════\n\n⏳ Downloading media from URL: ${url}`,
         threadID,
         messageID
       );
 
       const apiUrl = `https://cid-kagenou-api-production.up.railway.app/api/alldl?url=${encodeURIComponent(url)}`;
-      const apiResponse = await axios.get(apiUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-        }
+      const { data } = await axios.get(apiUrl, {
+        headers: { "User-Agent": "Mozilla/5.0" }
       });
 
-      const data = apiResponse.data;
-
-      if (!data.status || !data.result || !data.result.data || !data.result.data.high) {
+      if (!data?.status || !data?.result?.data?.high) {
         throw new Error("API did not return a valid video URL.");
       }
 
       const videoUrl = data.result.data.high;
-      const videoTitle = data.result.data.title || "Untitled Video";
+      const title = data.result.data.title || "Untitled Video";
 
-      const videoResponse = await axios({
-        url: videoUrl,
-        method: "GET",
-        responseType: "stream"
-      });
+      const videoPath = path.resolve(__dirname, `../temp/autodl_${Date.now()}.mp4`);
 
-      const videoPath = path.resolve(__dirname, "../temp/autodl_video.mp4");
-      const videoWriter = fs.createWriteStream(videoPath);
-      videoResponse.data.pipe(videoWriter);
+      const writer = fs.createWriteStream(videoPath);
+      const response = await axios({ url: videoUrl, method: "GET", responseType: "stream" });
+
+      response.data.pipe(writer);
 
       await new Promise((resolve, reject) => {
-        videoWriter.on("finish", resolve);
-        videoWriter.on("error", reject);
+        writer.on("finish", resolve);
+        writer.on("error", reject);
       });
 
-      const videoStats = fs.statSync(videoPath);
-      if (videoStats.size === 0) throw new Error("Downloaded video file is empty");
+      const stats = fs.statSync(videoPath);
+      if (stats.size === 0) throw new Error("Downloaded video is empty.");
 
-      const videoMessage =
-        `════『 𝗔𝗨𝗧𝗢𝗗𝗟 』════\n\n` +
-        `✅ Video downloaded successfully!\n\n` +
-        `📹 Title: ${videoTitle}\n\n` +
-        `🎥 Video (MP4) Attachment Below:\n\n` +
-        `> Thank you for using our bot`;
-
-      const videoStream = fs.createReadStream(videoPath);
       await api.sendMessage(
         {
-          body: videoMessage,
-          attachment: videoStream
+          body: `════『 𝗔𝗨𝗧𝗢𝗗𝗟 』════\n\n✅ Video downloaded!\n📹 Title: ${title}`,
+          attachment: fs.createReadStream(videoPath)
         },
         threadID,
         messageID
       );
 
       fs.unlinkSync(videoPath);
-    } catch (error) {
-      console.error("Error in autodl:", error.message);
-      const errorMessage =
-        `════『 𝗔𝗨𝗧𝗢𝗗𝗟 』════\n\n` +
-        `❌ Failed to download media.\n` +
-        `Error: ${error.message}\n\n` +
-        `> Thank you for using our bot`;
-
-      await api.sendMessage(errorMessage, threadID, messageID);
+    } catch (err) {
+      console.error("AutoDL Error:", err.message);
+      await api.sendMessage(
+        `════『 𝗔𝗨𝗧𝗢𝗗𝗟 』════\n\n❌ Failed to download media.\nError: ${err.message}`,
+        threadID,
+        messageID
+      );
     }
   },
 
   run: async function ({ api, event, args, usersData }) {
     const { threadID, messageID, senderID } = event;
 
-    // Check if sender is admin
-    const isAdmin = usersData.adminIDs?.includes(senderID);
+    // Admin check
+    const isAdmin = usersData?.adminIDs?.includes(senderID);
     if (!isAdmin) {
       return api.sendMessage(
-        "════『 𝗔𝗨𝗧𝗢𝗗𝗟 』════\n\n❌ Only admins can toggle this command.",
+        "❌ Only admins can toggle AutoDL.",
         threadID,
         messageID
       );
     }
 
     const configPath = path.resolve(__dirname, "../config/autodl_config.json");
+
     let config = { enabled: true };
-    if (fs.existsSync(configPath)) {
-      config = await fs.readJson(configPath);
-    } else {
-      await fs.writeJson(configPath, config);
+    try {
+      if (fs.existsSync(configPath)) {
+        config = await fs.readJson(configPath);
+      } else {
+        await fs.writeJson(configPath, config);
+      }
+    } catch (err) {
+      return api.sendMessage(`Error reading config: ${err.message}`, threadID, messageID);
     }
 
     const toggle = args[0]?.toLowerCase();
 
     if (toggle === "on") {
       if (config.enabled) {
-        return api.sendMessage(
-          "════『 𝗔𝗨𝗧𝗢𝗗𝗟 』════\n\n✅ Autodl is already enabled.",
-          threadID,
-          messageID
-        );
+        return api.sendMessage("✅ AutoDL is already enabled.", threadID, messageID);
       }
       config.enabled = true;
       await fs.writeJson(configPath, config);
-      return api.sendMessage(
-        "════『 𝗔𝗨𝗧𝗢𝗗𝗟 』════\n\n✅ Autodl has been enabled.",
-        threadID,
-        messageID
-      );
+      return api.sendMessage("✅ AutoDL has been enabled.", threadID, messageID);
     }
 
     if (toggle === "off") {
       if (!config.enabled) {
-        return api.sendMessage(
-          "════『 𝗔𝗨𝗧𝗢𝗗𝗟 』════\n\n✅ Autodl is already disabled.",
-          threadID,
-          messageID
-        );
+        return api.sendMessage("✅ AutoDL is already disabled.", threadID, messageID);
       }
       config.enabled = false;
       await fs.writeJson(configPath, config);
-      return api.sendMessage(
-        "════『 𝗔𝗨𝗧𝗢𝗗𝗟 』════\n\n✅ Autodl has been disabled.",
-        threadID,
-        messageID
-      );
+      return api.sendMessage("✅ AutoDL has been disabled.", threadID, messageID);
     }
 
-    return api.sendMessage(
-      "════『 𝗔𝗨𝗧𝗢𝗗𝗟 』════\n\n📜 Usage: /autodl [on|off]\n\n> Thank you for using our bot",
-      threadID,
-      messageID
-    );
+    return api.sendMessage("📜 Usage: /autodl [on|off]", threadID, messageID);
   }
 };
