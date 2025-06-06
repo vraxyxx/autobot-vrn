@@ -1,0 +1,128 @@
+body {
+  margin: 0;
+  background-color: #111;
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
+}
+
+.header {
+  position: relative;
+  text-align: center;
+  padding-bottom: 1rem;
+}
+
+.banner {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.profile-pic {
+  position: absolute;
+  bottom: -40px;
+  left: 20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid yellow;
+}
+
+.profile-container {
+  padding-top: 60px;
+  padding-left: 20px;
+}
+
+.profile-name {
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.verified-icon {
+  margin-left: 5px;
+  color: #1e90ff;
+}
+
+.github-link {
+  color: #1e90ff;
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: inline-block;
+  margin: 5px 0 15px;
+}
+
+.warning {
+  color: #ccc;
+  font-size: 0.9rem;
+  max-width: 90%;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+  gap: 1rem;
+}
+
+.btn {
+  background-color: #1e90ff;
+  border: none;
+  padding: 10px 20px;
+  color: white;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background-color: #fff;
+  color: #000;
+}
+
+.container {
+  padding: 2rem;
+}
+
+textarea,
+input {
+  width: 100%;
+  margin: 1rem 0;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background-color: #222;
+  color: #fff;
+  resize: none;
+}
+
+.subtitle {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-top: 2rem;
+}
+
+.terms {
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  color: #aaa;
+}
+
+.submit-btn {
+  background-color: #1e90ff;
+  padding: 10px 30px;
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+.footer {
+  text-align: center;
+  padding: 1rem;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.terms-check {
+  display: block;
+  margin-top: 1rem;
+}
