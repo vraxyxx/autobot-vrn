@@ -5,9 +5,9 @@ module.exports = {
   handleEvent: true,
 
   async handleEvent({ api, event }) {
-    const { messageID, body, threadID } = event;
+    const { messageID, body, threadID, senderID, isGroup } = event;
 
-    if (!body) return;
+    if (!body || typeof body !== "string") return;
 
     // Define keywords and corresponding reactions
     const reactions = {
@@ -32,7 +32,12 @@ module.exports = {
 
     for (const keyword in reactions) {
       if (lowerBody.includes(keyword)) {
-        return api.setMessageReaction(reactions[keyword], messageID, () => {}, true);
+        try {
+          await api.setMessageReaction(reactions[keyword], messageID, () => {}, true);
+        } catch (err) {
+          console.error(`Failed to set reaction: ${err.message}`);
+        }
+        break;
       }
     }
   }
