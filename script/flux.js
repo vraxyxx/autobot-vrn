@@ -14,38 +14,36 @@ module.exports.config = {
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID } = event;
   const prompt = args.join(' ').trim();
+  const prefix = "/"; // Change this if your bot has a dynamic prefix system
 
-  const prefix = "/"; // You may dynamically fetch this if needed
-
+  // 🟡 No prompt given
   if (!prompt) {
-    const usageMessage = `====『 𝗙𝗟𝗨𝗫 』====\n\n` +
-      `  ╭─╮\n` +
-      `  | 『 𝗜𝗡𝗙𝗢 』 Please provide a prompt.\n` +
-      `  | ✅ Usage: ${prefix}flux <prompt>\n` +
-      `  | 📜 Example: ${prefix}flux A futuristic city at sunset\n` +
-      `  ╰─────────────ꔪ\n\n` +
-      `> 𝗧𝗵𝗮𝗻𝗸 𝘆𝗼𝘂 𝗳𝗼𝗿 𝘂𝘀𝗶𝗻𝗴 our bot\n> Contact: veaxdev36@gmail.com`;
+    const usageMessage = `════『 𝗙𝗟𝗨𝗫 』════\n\n` +
+      `⚠️ Please provide a prompt to generate an image.\n\n` +
+      `📌 Usage: ${prefix}flux <prompt>\n` +
+      `📸 Example: ${prefix}flux A futuristic robot flying over Tokyo\n\n` +
+      `> Thank you for using the Flux image generator!`;
 
     return api.sendMessage(usageMessage, threadID, messageID);
   }
 
   try {
-    const waitMsg = `====『 𝗙𝗟𝗨𝗫 』====\n\n` +
-      `  ╭─╮\n` +
-      `  | 『 𝗜𝗡𝗙𝗢 』 Generating image for "${prompt}", please wait...\n` +
-      `  ╰─────────────ꔪ\n\n> Thank you for using this bot.`;
+    // 🕒 Send "loading" message first
+    const waitMsg = `════『 𝗙𝗟𝗨𝗫 』════\n\n` +
+      `🖌️ Generating image for: "${prompt}"\nPlease wait a moment...`;
 
     api.sendMessage(waitMsg, threadID);
 
+    // 🟢 Call the Flux AI API
     const response = await axios.get("https://kaiz-apis.gleeze.com/api/flux", {
       responseType: 'stream',
       params: { prompt }
     });
 
-    const successMessage = `====『 𝗙𝗟𝗨𝗫 』====\n\n` +
-      `  ╭─╮\n` +
-      `  | 『 𝗦𝗨𝗖𝗖𝗘𝗦𝗦 』 Generated image for: "${prompt}"\n` +
-      `  ╰─────────────ꔪ\n\n> 𝗧𝗵𝗮𝗻𝗸 𝘆𝗼𝘂 for using our bot\n> Contact: korisawaumuzaki@gmail.com`;
+    // ✅ Success
+    const successMessage = `════『 𝗙𝗟𝗨𝗫 』════\n\n` +
+      `✅ Successfully generated image for:\n"${prompt}"\n\n` +
+      `> Enjoy your image!`;
 
     return api.sendMessage({
       body: successMessage,
@@ -53,11 +51,11 @@ module.exports.run = async function ({ api, event, args }) {
     }, threadID, messageID);
 
   } catch (error) {
-    console.error('❌ Error in flux command:', error);
-    const errorMessage = `====『 𝗙𝗟𝗨𝗫 𝗘𝗥𝗥𝗢𝗥 』====\n\n` +
-      `  ╭─╮\n` +
-      `  | 『 𝗜𝗡𝗙𝗢 』 Failed to generate image. Please try again later.\n` +
-      `  ╰─────────────ꔪ\n\n> Thank you for using our bot\n> Contact: korisawaumuzaki@gmail.com`;
+    console.error('❌ Error in flux command:', error.message || error);
+
+    const errorMessage = `════『 𝗙𝗟𝗨𝗫 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to generate image.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
+      `> Please try again later.`;
 
     return api.sendMessage(errorMessage, threadID, messageID);
   }
