@@ -10,14 +10,14 @@ module.exports.config = {
 
 const axios = require("axios");
 
-module.exports.run = async function({ api, event, args, Users }) {
+module.exports.run = async function({ api, event }) {
   try {
-    const { threadID, messageID, senderID, type, attachments } = event;
+    const { threadID, messageID } = event;
 
-    // Get image URL from reply or attachment
+    // Extract image URL either from reply or attachments
     let imageUrl = null;
 
-    // If reply message has image attachment
+    // Check if message is a reply and has attachments
     if (event.messageReply && event.messageReply.attachments && event.messageReply.attachments.length) {
       for (const att of event.messageReply.attachments) {
         if (att.type === "photo" && att.url) {
@@ -27,7 +27,7 @@ module.exports.run = async function({ api, event, args, Users }) {
       }
     }
 
-    // If current message has image attachment
+    // If no image in reply, check if current message has attachments
     if (!imageUrl && event.attachments && event.attachments.length) {
       for (const att of event.attachments) {
         if (att.type === "photo" && att.url) {
@@ -38,24 +38,24 @@ module.exports.run = async function({ api, event, args, Users }) {
     }
 
     if (!imageUrl) {
-      return api.sendMessage("Please reply to an image or send an image with this command.", threadID, messageID);
+      return api.sendMessage("❌ Please reply to an image or send an image with this command.", threadID, messageID);
     }
 
-    // Fetch the image buffer
+    // Download image data
     const imageResponse = await axios.get(imageUrl, { responseType: "arraybuffer" });
     const imageBuffer = Buffer.from(imageResponse.data, "utf-8");
 
-    // Upload image anonymously to Imgur
+    // Prepare base64 string of image
+    const base64Image = imageBuffer.toString("base64");
+
+    // Imgur anonymous upload endpoint
+    const IMGUR_CLIENT_ID = "546dcc88c8a1b1f"; // Public demo client ID
+
+    // Form data for Imgur API
     const formData = new URLSearchParams();
-    formData.append("image", imageBuffer.toString("base64"));
+    formData.append("image", base64Image);
 
-    // Using Imgur's anonymous upload endpoint with client ID from public tutorials
-    // But since no API key needed, use the old anonymous API which requires client ID.
-    // For truly no API, use https://imgur.com/upload? but no official API for this.
-    // So here, we'll use a free client ID for anonymous upload (can be replaced).
-
-    const IMGUR_CLIENT_ID = "546dcc88c8a1b1f"; // public example client ID
-
+    // Upload image
     const uploadRes = await axios.post("https://api.imgur.com/3/image", formData.toString(), {
       headers: {
         Authorization: `Client-ID ${IMGUR_CLIENT_ID}`,
@@ -67,11 +67,10 @@ module.exports.run = async function({ api, event, args, Users }) {
       const imgurLink = uploadRes.data.data.link;
       return api.sendMessage(`✅ Image uploaded successfully!\n${imgurLink}`, threadID, messageID);
     } else {
-      return api.sendMessage("Failed to upload image to Imgur.", threadID, messageID);
+      return api.sendMessage("❌ Failed to upload image to Imgur.", threadID, messageID);
     }
-
-  } catch (e) {
-    console.error(e);
-    return api.sendMessage("An error occurred during upload.", event.threadID, event.messageID);
+  } catch (error) {
+    console.error(error);
+    return api.sendMessage("❌ An error occurred while uploading.", event.threadID, event.messageID);
   }
 };
