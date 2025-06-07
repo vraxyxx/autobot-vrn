@@ -36,21 +36,27 @@ module.exports.run = ({ api, event }) => {
   );
 };
 
-module.exports.handleReply = async ({ api, event, handleReply, Users }) => {
+module.exports.handleReply = async ({ api, event, handleReply }) => {
   const { threadID, messageID, senderID, body } = event;
   const timeZ = moment.tz("Asia/Kolkata").format("HH:mm:ss | DD/MM/YYYY");
 
+  // Only the original user can continue the teach flow
   if (handleReply.content.id !== senderID) return;
 
   const input = body.trim();
   const content = handleReply.content;
 
+  // Helper to move to the next step
   const sendStep = (text, step, updatedContent) =>
-    api.sendMessage(text, threadID, (err, info) => {
+    api.sendMessage(text, threadID, async (err, info) => {
       if (err) return;
-      global.client.handleReply.splice(global.client.handleReply.indexOf(handleReply), 1);
-      api.unsendMessage(handleReply.messageID);
+      // Remove the old handleReply
+      const idx = global.client.handleReply.indexOf(handleReply);
+      if (idx > -1) global.client.handleReply.splice(idx, 1);
+      // Optionally unsend the previous bot message for tidiness
+      try { await api.unsendMessage(handleReply.messageID); } catch (e) {}
 
+      // Register the next step
       global.client.handleReply.push({
         name: module.exports.config.name,
         messageID: info.messageID,
@@ -59,9 +65,11 @@ module.exports.handleReply = async ({ api, event, handleReply, Users }) => {
       });
     }, messageID);
 
-  const sendFinal = (msg) => {
-    global.client.handleReply.splice(global.client.handleReply.indexOf(handleReply), 1);
-    api.unsendMessage(handleReply.messageID);
+  // Helper for final response (cleans up handleReply)
+  const sendFinal = async (msg) => {
+    const idx = global.client.handleReply.indexOf(handleReply);
+    if (idx > -1) global.client.handleReply.splice(idx, 1);
+    try { await api.unsendMessage(handleReply.messageID); } catch (e) {}
     return api.sendMessage(msg, threadID, messageID);
   };
 
@@ -74,9 +82,15 @@ module.exports.handleReply = async ({ api, event, handleReply, Users }) => {
       case 2:
         content.ans = input;
 
-        const res = await axios.get(encodeURI(
-          `https://sim-api-by-priyansh.glitch.me/sim?type=teach&ask=${content.ask}&ans=${content.ans}&apikey=PriyanshVip`
-        ));
+        // Call the teaching API
+        let res;
+        try {
+          res = await axios.get(encodeURI(
+            `https://sim-api-by-priyansh.glitch.me/sim?type=teach&ask=${content.ask}&ans=${content.ans}&apikey=PriyanshVip`
+          ));
+        } catch (err) {
+          return sendFinal("❌ API request failed. Please try again later.");
+        }
 
         if (res.data?.error) {
           return sendFinal(`❌ Error: ${res.data.error}`);
