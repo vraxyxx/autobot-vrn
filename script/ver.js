@@ -1,4 +1,4 @@
-module.exports.cofig = {
+module.exports.config = {
 name: "ver",
 version: "1.0.0",
 credits: "vern",
