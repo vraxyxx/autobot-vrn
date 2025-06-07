@@ -2,7 +2,7 @@ module.exports.config = {
 name: "ver",
 version: "1.0.0",
 credits: "vern",
-description: "commands made by vern.",
+description: "A commands that send messages automatically.",
 commanCategory: "General",
 usages: "[optional message]",
 cooldown: 1
