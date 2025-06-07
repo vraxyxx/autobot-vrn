@@ -3,7 +3,7 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "spotify",
-    version: "1.1.1",
+    version: "1.1.2",
     author: "vern",
     description: "Search Spotify tracks and show details about the top 3 results.",
     cooldowns: 5,
@@ -44,27 +44,47 @@ module.exports = {
         const min = Math.floor(durationMs / 60000);
         const sec = Math.floor((durationMs % 60000) / 1000);
 
+        // Fix: Format artists properly if array of objects
+        let artists = "Unknown";
+        if (Array.isArray(t.artists)) {
+          if (typeof t.artists[0] === "object" && t.artists[0].name) {
+            artists = t.artists.map(a => a.name).join(", ");
+          } else {
+            artists = t.artists.join(", ");
+          }
+        }
+
+        // Fix: Album field
+        const album = typeof t.album === "object" && t.album.name ? t.album.name : (t.album || "Unknown");
+
         msg += `🔹 ${i + 1}. ${t.name || "Unknown Title"}\n`;
-        msg += `   👤 Artists: ${(t.artists || []).join(", ") || "Unknown"}\n`;
-        msg += `   💿 Album: ${t.album || "Unknown"}\n`;
+        msg += `   👤 Artists: ${artists}\n`;
+        msg += `   💿 Album: ${album}\n`;
         msg += `   ⏱ Duration: ${min}m ${sec}s\n`;
         msg += `   🎧 Preview: ${t.preview_url || "N/A"}\n`;
         msg += `   🔗 Link: ${t.external_urls?.spotify || "N/A"}\n\n`;
       }
 
-      // 🖼️ Attempt to attach cover image
-      let attachment = null;
-      const imageUrl = topTracks[0]?.album_images?.[0];
-      if (imageUrl) {
-        const imgStream = await global.utils.getStream(imageUrl);
-        attachment = imgStream;
+      // 🖼️ Attempt to attach cover image (from first result)
+      let messageData = { body: msg.trim() };
+
+      // Fix: Album images from t.album.images[0].url (Spotify API structure)
+      let imageUrl = null;
+      if (topTracks[0]?.album && Array.isArray(topTracks[0].album.images) && topTracks[0].album.images[0]?.url) {
+        imageUrl = topTracks[0].album.images[0].url;
+      }
+
+      if (imageUrl && global.utils && typeof global.utils.getStream === "function") {
+        try {
+          const imgStream = await global.utils.getStream(imageUrl);
+          if (imgStream) messageData.attachment = imgStream;
+        } catch (imgErr) {
+          // Ignore image error, just send text
+        }
       }
 
       // ✅ Send result
-      return api.sendMessage({
-        body: msg.trim(),
-        attachment
-      }, threadID, messageID);
+      return api.sendMessage(messageData, threadID, messageID);
 
     } catch (err) {
       console.error("❌ Error in spotify command:", err.message || err);
