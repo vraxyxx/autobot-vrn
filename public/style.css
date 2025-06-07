@@ -1,3 +1,23 @@
+/* Matrix canvas fills whole background */
+#matrix {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1; /* Behind all content */
+  background-color: #111; /* fallback background */
+}
+
+/* Make sure container is above the matrix background */
+.container {
+  position: relative;
+  padding: 2rem;
+  z-index: 1;
+}
+
+/* Your original styles below */
+
 body {
   margin: 0;
   background-color: #111;
@@ -93,10 +113,6 @@ body {
   animation: textFloat 1s ease-out forwards;
   opacity: 0;
   animation-delay: 1.3s;
-}
-
-.container {
-  padding: 2rem;
 }
 
 textarea,
