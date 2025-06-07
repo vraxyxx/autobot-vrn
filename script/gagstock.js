@@ -129,7 +129,7 @@ module.exports.config = {
   name: 'gagstock',
   version: '1.0.0',
   hasPermission: 0,
-  credits: 'Jerome',
+  credits: 'vern',
   description: 'Track Grow A Garden stocks, weather, and cosmetics in real time.',
   usage: 'gagstock on | gagstock off',
   cooldown: 5
