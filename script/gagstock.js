@@ -1,181 +1,136 @@
-const { sendMessage } = require("../handles/sendMessage");
-const axios = require("axios");
+const axios = require('axios');
 
 const activeSessions = new Map();
-const PH_OFFSET = 8 * 60 * 60 * 1000;
 
-function pad(n) {
-  return n < 10 ? "0" + n : n;
-}
+module.exports.run = async function ({ api, event, args }) {
+  const action = args[0]?.toLowerCase();
 
-function getPHTime() {
-  const now = new Date();
-  return new Date(now.getTime() + now.getTimezoneOffset() * 60000 + PH_OFFSET);
-}
-
-function getCountdown(target) {
-  const now = getPHTime();
-  const msLeft = target - now;
-  if (msLeft <= 0) return "00h 00m 00s";
-  const h = Math.floor(msLeft / 3.6e6);
-  const m = Math.floor((msLeft % 3.6e6) / 6e4);
-  const s = Math.floor((msLeft % 6e4) / 1000);
-  return `${pad(h)}h ${pad(m)}m ${pad(s)}s`;
-}
-
-function getNextRestocks() {
-  const now = getPHTime();
-  const timers = {};
-
-  
-  const nextEgg = new Date(now);
-  nextEgg.setMinutes(now.getMinutes() < 30 ? 30 : 0);
-  if (now.getMinutes() >= 30) nextEgg.setHours(now.getHours() + 1);
-  nextEgg.setSeconds(0, 0);
-  timers.egg = getCountdown(nextEgg);
-
-  
-  const next5 = new Date(now);
-  const nextM = Math.ceil((now.getMinutes() + (now.getSeconds() > 0 ? 1 : 0)) / 5) * 5;
-  next5.setMinutes(nextM === 60 ? 0 : nextM, 0, 0);
-  if (nextM === 60) next5.setHours(now.getHours() + 1);
-  timers.gear = timers.seed = getCountdown(next5);
-
-  
-  const nextHour = new Date(now);
-  nextHour.setHours(now.getHours() + 1, 0, 0, 0);
-  timers.honey = getCountdown(nextHour);
-
-  
-  const next7 = new Date(now);
-  const totalHours = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
-  const next7h = Math.ceil(totalHours / 7) * 7;
-  next7.setHours(next7h, 0, 0, 0);
-  timers.cosmetics = getCountdown(next7);
-
-  return timers;
-}
-
-
-function formatValue(val) {
-  if (val >= 1_000_000) return `x${(val / 1_000_000).toFixed(1)}M`;
-  if (val >= 1_000) return `x${(val / 1_000).toFixed(1)}K`;
-  return `x${val}`;
-}
-
-module.exports = {
-  name: "gagstock",
-  description: "Track Grow A Garden stock including cosmetics and restocks.",
-  usage: "gagstock on | gagstock off",
-  category: "Tools ⚒️",
-
-  async execute(senderId, args, pageAccessToken) {
-    const action = args[0]?.toLowerCase();
-
-    if (action === "off") {
-      const session = activeSessions.get(senderId);
-      if (session) {
-        clearInterval(session.interval);
-        activeSessions.delete(senderId);
-        return await sendMessage(senderId, {
-          text: "🛑 Gagstock tracking stopped."
-        }, pageAccessToken);
-      } else {
-        return await sendMessage(senderId, {
-          text: "⚠️ You don't have an active gagstock session."
-        }, pageAccessToken);
-      }
-    }
-
-    if (action !== "on") {
-      return await sendMessage(senderId, {
-        text: "📌 Usage:\n• `gagstock on` to start tracking\n• `gagstock off` to stop tracking"
-      }, pageAccessToken);
-    }
-
-    if (activeSessions.has(senderId)) {
-      return await sendMessage(senderId, {
-        text: "📡 You're already tracking Gagstock. Use `gagstock off` to stop."
-      }, pageAccessToken);
-    }
-
-    await sendMessage(senderId, {
-      text: "✅ Gagstock tracking started! You'll be notified when stock or weather changes."
-    }, pageAccessToken);
-
-    const sessionData = {
-      interval: null,
-      lastCombinedKey: null,
-      lastMessage: ""
-    };
-
-    async function fetchAll() {
-      try {
-        const [allStockRes, weatherRes] = await Promise.all([
-          axios.get("http://65.108.103.151:22377/api/stocks?type=all"),
-          axios.get("https://growagardenstock.com/api/stock/weather")
-        ]);
-
-        const stockData = allStockRes.data;
-        const weather = weatherRes.data;
-
-        const combinedKey = JSON.stringify({
-          gearStock: stockData.gearStock,
-          seedsStock: stockData.seedsStock,
-          eggStock: stockData.eggStock,
-          honeyStock: stockData.honeyStock,
-          cosmeticsStock: stockData.cosmeticsStock,
-          weatherUpdatedAt: weather.updatedAt,
-          weatherCurrent: weather.currentWeather,
-        });
-
-        if (combinedKey === sessionData.lastCombinedKey) return;
-        sessionData.lastCombinedKey = combinedKey;
-
-        const restocks = getNextRestocks();
-
-        const formatList = (arr) => (arr?.length
-          ? arr.map(i =>
-              `- ${i.emoji ? i.emoji + " " : ""}${i.name}: ${formatValue(i.value)}`
-            ).join("\n")
-          : "None."
-        );
-
-        const gearList = formatList(stockData.gearStock);
-        const seedList = formatList(stockData.seedsStock);
-        const eggList = formatList(stockData.eggStock);
-        const cosmeticsList = formatList(stockData.cosmeticsStock);
-        const honeyList = formatList(stockData.honeyStock);
-
-        const weatherDetails =
-          `🌤️ 𝗪𝗲𝗮𝘁𝗵𝗲𝗿: ${weather.icon || "🌦️"} ${weather.currentWeather}\n` +
-          `📖 Description: ${weather.description}\n` +
-          `📌 Effect: ${weather.effectDescription}\n` +
-          `🪄 Crop Bonus: ${weather.cropBonuses}\n` +
-          `📢 Visual Cue: ${weather.visualCue}\n` +
-          `🌟 Rarity: ${weather.rarity}`;
-
-        const message =
-          `🌾 𝗚𝗿𝗼𝘄 𝗔 𝗚𝗮𝗿𝗱𝗲𝗻 — 𝗧𝗿𝗮𝗰𝗸𝗲𝗿\n\n` +
-          `🛠️ 𝗚𝗲𝗮𝗿:\n${gearList}\n⏳ Restock in: ${restocks.gear}\n\n` +
-          `🌱 𝗦𝗲𝗲𝗱𝘀:\n${seedList}\n⏳ Restock in: ${restocks.seed}\n\n` +
-          `🥚 𝗘𝗴𝗴𝘀:\n${eggList}\n⏳ Restock in: ${restocks.egg}\n\n` +
-          `🎨 𝗖𝗼𝘀𝗺𝗲𝘁𝗶𝗰𝘀:\n${cosmeticsList}\n⏳ Restock in: ${restocks.cosmetics}\n\n` +
-          `🍯 𝗛𝗼𝗻𝗲𝘆:\n${honeyList}\n⏳ Restock in: ${restocks.honey}\n\n` +
-          weatherDetails;
-
-        if (message !== sessionData.lastMessage) {
-          sessionData.lastMessage = message;
-          await sendMessage(senderId, { text: message }, pageAccessToken);
-        }
-
-      } catch (err) {
-        console.error(`❌ Gagstock error for ${senderId}:`, err.message);
-      }
-    }
-
-    sessionData.interval = setInterval(fetchAll, 10 * 1000);
-    activeSessions.set(senderId, sessionData);
-    await fetchAll();
+  if (!action || !['on', 'off'].includes(action)) {
+    return api.sendMessage(
+      '📌 𝗨𝘀𝗮𝗴𝗲:\n• gagstock on — Start tracking\n• gagstock off — Stop tracking',
+      event.threadID,
+      event.messageID
+    );
   }
+
+  const senderId = event.senderID;
+
+  if (action === 'off') {
+    const session = activeSessions.get(senderId);
+    if (session) {
+      clearInterval(session.interval);
+      activeSessions.delete(senderId);
+      return api.sendMessage('🛑 Gagstock tracking stopped.', event.threadID, event.messageID);
+    } else {
+      return api.sendMessage('⚠️ You have no active gagstock tracking.', event.threadID, event.messageID);
+    }
+  }
+
+  if (activeSessions.has(senderId)) {
+    return api.sendMessage('📡 You\'re already tracking Gagstock. Use `gagstock off` to stop.', event.threadID, event.messageID);
+  }
+
+  await api.sendMessage('✅ Gagstock tracking started! You\'ll be notified on stock/weather changes.', event.threadID, event.messageID);
+
+  const sessionData = {
+    interval: null,
+    lastKey: null,
+    lastMsg: ''
+  };
+
+  const countdown = (updatedAt, intervalSec) => {
+    const now = Date.now();
+    const diff = Math.max(intervalSec - Math.floor((now - updatedAt) / 1000), 0);
+    const m = Math.floor((diff % 3600) / 60);
+    const s = diff % 60;
+    return `${m}m ${s}s`;
+  };
+
+  const honeyCountdown = () => {
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+    const m = 59 - now.getMinutes();
+    const s = 60 - now.getSeconds();
+    return `${m}m ${s < 10 ? `0${s}` : s}s`;
+  };
+
+  const fetchAndNotify = async () => {
+    try {
+      const [
+        gearRes, eggRes, weatherRes, honeyRes, cosmeticsRes, emojiRes
+      ] = await Promise.all([
+        axios.get('https://growagardenstock.com/api/stock?type=gear-seeds'),
+        axios.get('https://growagardenstock.com/api/stock?type=egg'),
+        axios.get('https://growagardenstock.com/api/stock/weather'),
+        axios.get('http://65.108.103.151:22377/api/stocks?type=honeyStock'),
+        axios.get('https://growagardenstock.com/api/special-stock?type=cosmetics'),
+        axios.get('http://65.108.103.151:22377/api/stocks?type=seedsStock')
+      ]);
+
+      const gear = gearRes.data;
+      const egg = eggRes.data;
+      const weather = weatherRes.data;
+      const honey = honeyRes.data;
+      const cosmetics = cosmeticsRes.data;
+      const emojis = emojiRes.data?.seedsStock || [];
+
+      const key = JSON.stringify({
+        gear: gear.gear,
+        seeds: gear.seeds,
+        egg: egg.egg,
+        weather: weather.updatedAt,
+        honey: honey.honeyStock,
+        cosmetics: cosmetics.cosmetics
+      });
+
+      if (key === sessionData.lastKey) return;
+      sessionData.lastKey = key;
+
+      const cosmeticsTimer = countdown(cosmetics.updatedAt, 14400);
+      const gearTimer = countdown(gear.updatedAt, 300);
+      const eggTimer = countdown(egg.updatedAt, 600);
+      const honeyTimer = honeyCountdown();
+
+      const gearText = gear.gear?.map(g => `- ${g}`).join("\n") || "None";
+      const seedText = gear.seeds?.map(s => {
+        const name = s.split(" **")[0];
+        const emoji = emojis.find(e => e.name.toLowerCase() === name.toLowerCase())?.emoji || "";
+        return `- ${emoji} ${s}`;
+      }).join("\n") || "None";
+
+      const eggText = egg.egg?.map(e => `- ${e}`).join("\n") || "None";
+      const honeyText = honey.honeyStock?.map(h => `- ${h.name}: ${h.value}`).join("\n") || "None";
+      const cosmeticsText = cosmetics.cosmetics?.map(c => `- ${c}`).join("\n") || "None";
+      const weatherText = `${weather.icon || "☁️"} ${weather.currentWeather || "Unknown"}`;
+      const cropBonus = weather.cropBonuses || "None";
+
+      const msg = `🌿 𝗚𝗿𝗼𝘄 𝗔 𝗚𝗮𝗿𝗱𝗲𝗻 — 𝗦𝘁𝗼𝗰𝗸 𝗨𝗽𝗱𝗮𝘁𝗲\n\n` +
+        `🛠️ 𝗚𝗲𝗮𝗿:\n${gearText}\n\n🌱 𝗦𝗲𝗲𝗱𝘀:\n${seedText}\n\n🥚 𝗘𝗴𝗴𝘀:\n${eggText}\n\n` +
+        `🎨 𝗖𝗼𝘀𝗺𝗲𝘁𝗶𝗰𝘀:\n${cosmeticsText}\n⏳ 𝗖𝗼𝘀𝗺𝗲𝘁𝗶𝗰 𝗿𝗲𝘀𝘁𝗼𝗰𝗸: ${cosmeticsTimer}\n\n` +
+        `🍯 𝗛𝗼𝗻𝗲𝘆:\n${honeyText}\n⏳ 𝗛𝗼𝗻𝗲𝘆 𝗿𝗲𝘀𝘁𝗼𝗰𝗸: ${honeyTimer}\n\n` +
+        `🌤️ 𝗪𝗲𝗮𝘁𝗵𝗲𝗿: ${weatherText}\n🪴 𝗖𝗿𝗼𝗽 𝗕𝗼𝗻𝘂𝘀: ${cropBonus}\n\n` +
+        `📅 𝗚𝗲𝗮𝗿/𝗦𝗲𝗲𝗱 𝗿𝗲𝘀𝘁𝗼𝗰𝗸: ${gearTimer}\n📅 𝗘𝗴𝗴 𝗿𝗲𝘀𝘁𝗼𝗰𝗸: ${eggTimer}`;
+
+      if (msg !== sessionData.lastMsg) {
+        sessionData.lastMsg = msg;
+        await api.sendMessage(msg, event.threadID);
+      }
+
+    } catch (err) {
+      console.error('gagstock error:', err.message);
+    }
+  };
+
+  sessionData.interval = setInterval(fetchAndNotify, 10000);
+  activeSessions.set(senderId, sessionData);
+  await fetchAndNotify();
+};
+
+module.exports.config = {
+  name: 'gagstock',
+  version: '1.0.0',
+  hasPermission: 0,
+  credits: 'Jerome',
+  description: 'Track Grow A Garden stocks, weather, and cosmetics in real time.',
+  usage: 'gagstock on | gagstock off',
+  cooldown: 5
 };
