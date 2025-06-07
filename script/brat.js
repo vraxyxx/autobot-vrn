@@ -3,7 +3,7 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "brat",
-    version: "1.0.0",
+    version: "1.0.1",
     author: "vern",
     description: "Generate brat style text image.",
     cooldowns: 5,
@@ -39,10 +39,29 @@ module.exports = {
 
       const imageUrl = data.result;
 
+      if (!global.utils || typeof global.utils.getStream !== "function") {
+        return api.sendMessage(
+          "❌ Image streaming utility not found. Please make sure 'global.utils.getStream' is available.",
+          threadID,
+          messageID
+        );
+      }
+
+      let attachment;
+      try {
+        attachment = await global.utils.getStream(imageUrl);
+      } catch (imgErr) {
+        return api.sendMessage(
+          `❌ Unable to fetch brat image from the provided URL.\nError: ${imgErr.message}`,
+          threadID,
+          messageID
+        );
+      }
+
       return api.sendMessage(
         {
           body: "✅ Brat text image generated:",
-          attachment: await global.utils.getStream(imageUrl)
+          attachment
         },
         threadID,
         messageID
