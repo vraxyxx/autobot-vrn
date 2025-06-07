@@ -25,7 +25,10 @@ module.exports.run = async function ({ api, event, getText }) {
     return api.sendMessage(getText("noMention"), threadID, messageID);
   }
 
-  const mentionName = mentions[mentionID];
+  // Try to get the user's display name; fallback to tag string if necessary
+  const mentionObj = mentions[mentionID];
+  const mentionName = typeof mentionObj === "string" ? mentionObj : (mentionObj.tag || mentionID);
+
   const messages = [
     getText("started").replace("{name}", mentionName),
     "🔥 Listen up, warriors!",
@@ -41,13 +44,13 @@ module.exports.run = async function ({ api, event, getText }) {
     "☮️ Peace is restored. Until next time!"
   ];
 
-  // Sequentially send each message with delay
+  // Sequentially send each message with delay and proper await
   for (let i = 0; i < messages.length; i++) {
+    // First message: 1 second delay, others: 5 seconds
     await new Promise(resolve => setTimeout(resolve, i === 0 ? 1000 : 5000));
-
     if (i === 0) {
       // First message with mention
-      api.sendMessage({
+      await api.sendMessage({
         body: messages[i],
         mentions: [{
           id: mentionID,
@@ -55,7 +58,7 @@ module.exports.run = async function ({ api, event, getText }) {
         }]
       }, threadID, messageID);
     } else {
-      api.sendMessage(messages[i], threadID);
+      await api.sendMessage(messages[i], threadID);
     }
   }
 };
