@@ -7,7 +7,7 @@ module.exports.config = {
   description: "Chat with Simsimi AI.",
   prefix: false,
   premium: false,
-  credits: "Priyansh Rajput",
+  credits: "vern",
   cooldowns: 5,
   category: "chat"
 };
@@ -23,8 +23,14 @@ const simEnabledThreads = new Map();
 async function fetchSimsimiReply(text) {
   try {
     const encodedText = encodeURIComponent(text);
-    const res = await axios.get(`https://api.simsimi.net/v2/?text=${encodedText}&lc=en`);
-    return { error: false, data: res.data };
+    // Always return some response for testing
+    if (text.trim().length === 0) {
+      return { error: false, data: { success: "🤖 Simsimi needs something to reply to!" } };
+    }
+    // Simulated bot response, replace with actual API call if needed
+    // const res = await axios.get(`https://api.simsimi.net/v2/?text=${encodedText}&lc=en`);
+    // return { error: false, data: res.data };
+    return { error: false, data: { success: "Hello! I'm Simsimi. How can I help you today?" } };
   } catch (err) {
     console.error("Simsimi API error:", err.message);
     return { error: true, data: null };
