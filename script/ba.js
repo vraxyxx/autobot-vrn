@@ -3,18 +3,24 @@ const path = require("path");
 const axios = require("axios");
 
 module.exports = {
-  name: "ba",
-  description: "Get a random BA image.",
-  author: "vern",
-  nonPrefix: false, // Requires prefix (e.g., /ba)
-  cooldown: 3,
-  commandCategory: "image",
+  config: {
+    name: "ba",
+    description: "Get a random BA image.",
+    author: "vern",
+    prefix: true, // Requires prefix (e.g., /ba)
+    cooldowns: 3,
+    commandCategory: "image"
+  },
 
-  async run({ api, event }) {
+  run: async function({ api, event }) {
     const { threadID, messageID } = event;
-    const tempImagePath = path.join(__dirname, "../temp/ba_image.jpg");
+    const tempDir = path.join(__dirname, "../temp");
+    const tempImagePath = path.join(tempDir, "ba_image.jpg");
 
     try {
+      // Ensure temp directory exists
+      await fs.ensureDir(tempDir);
+
       // Step 1: Fetch JSON data from API
       const apiResponse = await axios.get("https://haji-mix-api.gleeze.com/api/ba", {
         responseType: "json"
@@ -43,9 +49,7 @@ module.exports = {
       await api.sendMessage({
         body: message,
         attachment: fs.createReadStream(tempImagePath)
-      }, threadID, () => {
-        fs.unlink(tempImagePath).catch(() => {});
-      }, messageID);
+      }, threadID, messageID);
 
     } catch (err) {
       console.error("❌ Error in ba command:", err.message);
@@ -56,6 +60,9 @@ module.exports = {
         `> Thank you for using our Cid Kagenou bot`;
 
       api.sendMessage(errorMsg, threadID, messageID);
+    } finally {
+      // Always cleanup temp file if it exists
+      try { await fs.unlink(tempImagePath); } catch (_) {}
     }
   }
 };
