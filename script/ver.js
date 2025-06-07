@@ -6,7 +6,7 @@ description: "A commands that
 send messages automatically.",
 commanCategory: "General",
 usages: "[optional message]",
-cooldown: 1
+cooldown: 5
 },
 
 module.exports.run = async function({ api, event, args }) {
