@@ -4,7 +4,7 @@ version: "1.0.0",
 credits: "vern",
 description: "commands made by vern.",
 commanCategory: "General",
-usages: "[Message option]",
+usages: "[optioal message]",
 cooldown: 1
 },
 
