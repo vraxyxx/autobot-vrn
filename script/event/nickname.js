@@ -2,7 +2,7 @@ let config = {};
 try {
     config = require("../config.json");
 } catch (e) {
-    config.botName = "Bot";
+    config.botName = "vern pogi";
 }
 
 module.exports.config = {
