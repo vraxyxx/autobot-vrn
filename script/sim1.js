@@ -13,7 +13,7 @@ module.exports.config = {
 };
 
 // Keeps track of which threads have Simsimi enabled
-const simEnabledThreads = new Map();
+const simEnabledThreads = new Set();
 
 // Your Simsimi ooguy.com API key
 const apiKey = "your-simsimi-apikey"; // <-- Replace with your actual API key
@@ -24,24 +24,21 @@ const apiKey = "your-simsimi-apikey"; // <-- Replace with your actual API key
  * @returns {object} - { error: boolean, data: object|null }
  */
 async function fetchSimsimiReply(text) {
+  if (!text || typeof text !== "string" || text.trim().length === 0) {
+    return { error: false, data: { success: "🤖 Simsimi needs something to reply to!" } };
+  }
   try {
-    const encodedText = encodeURIComponent(text);
-    if (text.trim().length === 0) {
-      return { error: false, data: { success: "🤖 Simsimi needs something to reply to!" } };
-    }
-    // Use the ooguy.com API as requested
-    const apiUrl = `https://simsimi.ooguy.com/sim?query=${encodedText}&apikey=${apiKey}`;
+    const apiUrl = `https://simsimi.ooguy.com/sim?query=${encodeURIComponent(text)}&apikey=${apiKey}`;
     const res = await axios.get(apiUrl);
-    // ooguy.com API returns { message: "..." } for success or { error: "..." }
-    if (res.data && res.data.message) {
+    if (res.data && typeof res.data.message === "string") {
       return { error: false, data: { success: res.data.message } };
-    } else if (res.data && res.data.error) {
+    } else if (res.data && typeof res.data.error === "string") {
       return { error: false, data: { error: res.data.error } };
     } else {
       return { error: false, data: { error: "🤖 Simsimi didn't understand that." } };
     }
   } catch (err) {
-    console.error("Simsimi API error:", err.message);
+    console.error("Simsimi API error:", err?.response?.data || err.message || err);
     return { error: true, data: null };
   }
 }
@@ -52,16 +49,10 @@ async function fetchSimsimiReply(text) {
  */
 module.exports.handleEvent = async function ({ api, event }) {
   const { threadID, messageID, senderID, body } = event;
-
-  // Only respond if Simsimi is enabled in this thread
   if (!simEnabledThreads.has(threadID)) return;
-  // Ignore if no message or if message is from the bot itself
   if (!body || senderID === api.getCurrentUserID()) return;
-
   const reply = await fetchSimsimiReply(body);
   if (reply.error) return;
-
-  // Simsimi API returns 'success' or 'error' fields for the reply
   const message = reply.data.success || reply.data.error || "🤖 Simsimi didn't understand that.";
   return api.sendMessage(message, threadID, messageID);
 };
@@ -77,31 +68,32 @@ module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID } = event;
   const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
-  if (!args[0]) {
+  if (!args.length) {
     return send("💬 Send a message or use `on` / `off` to control Simsimi.");
   }
 
   const command = args[0].toLowerCase();
 
   if (command === "on") {
-    if (simEnabledThreads.has(threadID))
+    if (simEnabledThreads.has(threadID)) {
       return send("⚠️ Simsimi is already enabled.");
-    simEnabledThreads.set(threadID, true);
+    }
+    simEnabledThreads.add(threadID);
     return send("✅ Simsimi has been enabled.");
   }
 
   if (command === "off") {
-    if (!simEnabledThreads.has(threadID))
+    if (!simEnabledThreads.has(threadID)) {
       return send("⚠️ Simsimi is already disabled.");
+    }
     simEnabledThreads.delete(threadID);
     return send("❎ Simsimi has been disabled.");
   }
 
-  // Default: manual one-time reply
+  // Manual one-time reply
   const query = args.join(" ");
   const reply = await fetchSimsimiReply(query);
   if (reply.error) return send("🚫 Error communicating with Simsimi.");
-
   const message = reply.data.success || reply.data.error || "🤖 Simsimi didn't understand that.";
   return send(message);
 };
