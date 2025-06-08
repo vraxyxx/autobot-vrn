@@ -3,10 +3,12 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "ssweb",
-    version: "1.0.0",
+    version: "1.0.1",
     author: "vern",
     description: "Take a screenshot of a website from a URL.",
+    prefix: true,
     cooldowns: 5,
+    commandCategory: "utility",
     dependencies: {
       axios: ""
     }
@@ -23,7 +25,17 @@ module.exports = {
       );
     }
 
-    const targetUrl = encodeURIComponent(args[0]);
+    const rawUrl = args[0];
+    // Basic validation for URL input
+    if (!/^https?:\/\//.test(rawUrl)) {
+      return api.sendMessage(
+        "❌ Invalid URL format. Please include http:// or https://",
+        threadID,
+        messageID
+      );
+    }
+
+    const targetUrl = encodeURIComponent(rawUrl);
 
     try {
       const response = await axios.get(`https://api.ferdev.my.id/tools/ssweb?url=${targetUrl}`);
@@ -39,10 +51,29 @@ module.exports = {
 
       const screenshotUrl = data.result;
 
+      if (typeof global.utils?.getStream !== "function") {
+        return api.sendMessage(
+          "❌ Image streaming utility not available.",
+          threadID,
+          messageID
+        );
+      }
+
+      let attachment;
+      try {
+        attachment = await global.utils.getStream(screenshotUrl);
+      } catch (imgErr) {
+        return api.sendMessage(
+          `❌ Unable to fetch screenshot image.\nError: ${imgErr.message}`,
+          threadID,
+          messageID
+        );
+      }
+
       return api.sendMessage(
         {
           body: "✅ Website screenshot:",
-          attachment: await global.utils.getStream(screenshotUrl)
+          attachment
         },
         threadID,
         messageID
