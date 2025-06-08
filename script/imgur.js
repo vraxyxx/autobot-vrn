@@ -1,51 +1,51 @@
 const axios = require("axios");
 
-module.exports = {
-  config: {
-    name: "imgur",
-    version: "1.0.1",
-    hasPermssion: 0,
-    credits: "vern",
-    description: "Upload an image to Imgur and get the link.",
-    commandCategory: "utility",
-    usages: "[reply or image URL]",
-    prefix: true,
-    cooldowns: 5,
-    dependencies: {
-      axios: ""
-    }
-  },
+module.exports.config = {
+  name: "imgur",
+  version: "1.0.0",
+  author: "vern",
+  description: "Process an image via the Imgur API endpoint.",
+  prefix: true,
+  cooldowns: 5,
+  commandCategory: "image",
+  dependencies: {
+    axios: ""
+  }
+};
 
-  run: async function({ api, event, args }) {
-    let linkanh = null;
-    if (event.messageReply && event.messageReply.attachments && event.messageReply.attachments[0] && event.messageReply.attachments[0].url) {
-      linkanh = event.messageReply.attachments[0].url;
-    } else if (args.length > 0) {
-      linkanh = args[0];
-    }
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID } = event;
+  const imageUrl = args[0];
 
-    if (!linkanh) {
-      return api.sendMessage(
-        "❗ Please reply to an image or provide a direct image URL.\nUsage: /imgur [image_url or reply to image]",
-        event.threadID,
-        event.messageID
-      );
-    }
+  if (!imageUrl) {
+    return api.sendMessage(
+      "🖼️ Please provide an image URL.\n\nUsage: /imgur [image_url]\nExample: /imgur https://i.imgur.com/Zu15xb4.jpeg",
+      threadID,
+      messageID
+    );
+  }
 
-    try {
-      const res = await axios.get(`https://imgur-api-by-koja.xx0xkoja.repl.co/imgur?link=${encodeURIComponent(linkanh)}`);
-      const img = res?.data?.uploaded?.image;
-      if (!img) {
-        return api.sendMessage("❌ Failed to upload image to Imgur.", event.threadID, event.messageID);
-      }
-      return api.sendMessage(`✅ Imgur link: ${img}`, event.threadID, event.messageID);
-    } catch (err) {
-      console.error("Error in imgur command:", err);
-      return api.sendMessage(
-        `❌ Failed to upload image to Imgur.\nError: ${err.message}`,
-        event.threadID,
-        event.messageID
-      );
-    }
+  try {
+    // Send loading message
+    await api.sendMessage("🖼️ Processing your image, please wait...", threadID, messageID);
+
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/imgur?url=${encodeURIComponent(imageUrl)}&apikey=4fe7e522-70b7-420b-a746-d7a23db49ee5`;
+
+    // Get the processed image as a stream
+    const response = await axios.get(apiUrl, { responseType: "stream" });
+
+    // Send the image back as an attachment
+    return api.sendMessage({
+      body: "🖼️ Here is your processed image!",
+      attachment: response.data
+    }, threadID, messageID);
+
+  } catch (error) {
+    console.error("❌ Error in imgur command:", error.message || error);
+    return api.sendMessage(
+      `❌ Failed to process image.\nError: ${error.response?.data?.message || error.message || "Unknown error"}`,
+      threadID,
+      messageID
+    );
   }
 };
