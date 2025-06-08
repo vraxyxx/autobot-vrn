@@ -3,10 +3,12 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "pinterest",
-    version: "1.0.1",
+    version: "1.0.2",
     author: "vern",
     description: "Search Pinterest images by query and send a random result.",
+    prefix: true, // Use prefix for command (e.g., /pinterest)
     cooldowns: 5,
+    commandCategory: "image",
     dependencies: {
       axios: ""
     }
@@ -59,11 +61,22 @@ module.exports = {
         );
       }
 
+      let attachment;
+      try {
+        attachment = await global.utils.getStream(randomImage);
+      } catch (imgErr) {
+        return api.sendMessage(
+          `❌ Unable to fetch image from Pinterest.\nError: ${imgErr.message}`,
+          threadID,
+          messageID
+        );
+      }
+
       // Send message with image attachment stream
       await api.sendMessage(
         {
           body: `🎉 Pinterest result for: ${args.join(" ")}`,
-          attachment: await global.utils.getStream(randomImage)
+          attachment
         },
         threadID,
         messageID
