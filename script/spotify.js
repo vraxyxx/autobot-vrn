@@ -1,98 +1,79 @@
-const axios = require("axios");
+const axios = require('axios');
 
 module.exports.config = {
   name: "spotify",
-  version: "1.1.3",
-  author: "vern",
-  description: "Search Spotify tracks and show details about the top 3 results.",
+  version: "1.0.0",
+  role: 0,
+  credits: "vern",
+  description: "Search for a song on Spotify using the Kaiz API.",
+  usage: "/spotify <song or artist>",
   prefix: true,
-  cooldowns: 5,
-  commandCategory: "music",
-  dependencies: {
-    axios: ""
-  }
+  cooldowns: 3,
+  commandCategory: "Music"
 };
 
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID } = event;
+  const query = args.join(' ').trim();
+  const prefix = "/"; // Change if your bot uses a dynamic prefix
 
-  // No input
-  if (!args.length) {
-    return api.sendMessage(
-      "❗ Please provide a song or artist name.\n\nUsage: /spotify [query]",
-      threadID,
-      messageID
-    );
+  // No query given
+  if (!query) {
+    const usageMessage = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 』════\n\n` +
+      `⚠️ Please provide a song or artist to search.\n\n` +
+      `📌 Usage: ${prefix}spotify <song or artist>\n` +
+      `🎵 Example: ${prefix}spotify about you\n\n` +
+      `> Thank you for using the Spotify search!`;
+
+    return api.sendMessage(usageMessage, threadID, messageID);
   }
 
-  const query = encodeURIComponent(args.join(" "));
-
-  // FIX: Corrected API URL (remove hardcoded 'multo' and '?query=' bug)
-  const apiUrl = `https://kaiz-apis.gleeze.com/api/spotify-search?q=${query}&apikey=4fe7e522-70b7-420b-a746-d7a23db49ee5`;
-
   try {
-    // Fetch results
-    const res = await axios.get(apiUrl);
-    const tracks = res.data?.data;
+    // Send loading message first
+    const waitMsg = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 』════\n\n` +
+      `🔎 Searching for: "${query}"\nPlease wait a moment...`;
+    await api.sendMessage(waitMsg, threadID, messageID);
 
-    if (!Array.isArray(tracks) || tracks.length === 0) {
-      return api.sendMessage(`❌ No results found for "${args.join(" ")}".`, threadID, messageID);
-    }
-
-    const topTracks = tracks.slice(0, 3);
-    let msg = `🎧 Spotify Top Results for: ${args.join(" ")}\n\n`;
-
-    for (let i = 0; i < topTracks.length; i++) {
-      const t = topTracks[i];
-      const durationMs = t.duration_ms || 0;
-      const min = Math.floor(durationMs / 60000);
-      const sec = Math.floor((durationMs % 60000) / 1000);
-
-      // Format artists
-      let artists = "Unknown";
-      if (Array.isArray(t.artists)) {
-        if (typeof t.artists[0] === "object" && t.artists[0].name) {
-          artists = t.artists.map(a => a.name).join(", ");
-        } else {
-          artists = t.artists.join(", ");
-        }
+    // Call the Spotify Search API
+    const apiUrl = "https://kaiz-apis.gleeze.com/api/spotify-search";
+    const response = await axios.get(apiUrl, {
+      params: {
+        q: query,
+        apikey: "4fe7e522-70b7-420b-a746-d7a23db49ee5"
       }
+    });
 
-      // Album name
-      const album = typeof t.album === "object" && t.album.name ? t.album.name : (t.album || "Unknown");
-
-      msg += `🔹 ${i + 1}. ${t.name || "Unknown Title"}\n`;
-      msg += `   👤 Artists: ${artists}\n`;
-      msg += `   💿 Album: ${album}\n`;
-      msg += `   ⏱ Duration: ${min}m ${sec}s\n`;
-      msg += `   🎧 Preview: ${t.preview_url || "N/A"}\n`;
-      msg += `   🔗 Link: ${t.external_urls?.spotify || "N/A"}\n\n`;
+    // Format results
+    const tracks = response.data?.tracks || [];
+    if (!tracks.length) {
+      return api.sendMessage(
+        `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 』════\n\n❌ No results found for "${query}".`,
+        threadID,
+        messageID
+      );
     }
 
-    // Try to attach cover image from first result
-    let messageData = { body: msg.trim() };
-    let imageUrl = null;
-    if (topTracks[0]?.album && Array.isArray(topTracks[0].album.images) && topTracks[0].album.images[0]?.url) {
-      imageUrl = topTracks[0].album.images[0].url;
-    }
+    let resultsMsg = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 』════\n\n` +
+      `🎶 Top results for: "${query}"\n\n`;
 
-    if (imageUrl && global.utils && typeof global.utils.getStream === "function") {
-      try {
-        const imgStream = await global.utils.getStream(imageUrl);
-        if (imgStream) messageData.attachment = imgStream;
-      } catch (imgErr) {
-        // Ignore image error, just send text
-      }
-    }
+    tracks.slice(0, 5).forEach((track, idx) => {
+      resultsMsg += `${idx + 1}. ${track.title} - ${track.artist}\n`;
+      if (track.url) resultsMsg += `🔗 ${track.url}\n`;
+      if (track.album) resultsMsg += `💿 Album: ${track.album}\n`;
+      resultsMsg += '\n';
+    });
 
-    return api.sendMessage(messageData, threadID, messageID);
+    resultsMsg += `> Powered by Kaiz Spotify API`;
 
-  } catch (err) {
-    console.error("❌ Error in spotify command:", err.message || err);
-    return api.sendMessage(
-      `❌ Failed to fetch data from Spotify API.\nError: ${err.message || 'Unknown error'}`,
-      threadID,
-      messageID
-    );
+    return api.sendMessage(resultsMsg, threadID, messageID);
+
+  } catch (error) {
+    console.error('❌ Error in spotify command:', error.message || error);
+
+    const errorMessage = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to search Spotify.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
+      `> Please try again later.`;
+
+    return api.sendMessage(errorMessage, threadID, messageID);
   }
 };
