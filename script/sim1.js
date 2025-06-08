@@ -2,9 +2,9 @@ const axios = require('axios');
 
 module.exports.config = {
   name: "sim1",
-  version: "4.3.7",
+  version: "4.3.8",
   role: 0,
-  description: "Chat with Simsimi AI.",
+  description: "Chat with Simsimi AI (ooguy.com API).",
   prefix: false,
   premium: false,
   credits: "vern",
@@ -15,6 +15,9 @@ module.exports.config = {
 // Keeps track of which threads have Simsimi enabled
 const simEnabledThreads = new Map();
 
+// Your Simsimi ooguy.com API key
+const apiKey = "your-simsimi-apikey"; // <-- Replace with your actual API key
+
 /**
  * Fetch Simsimi reply from API
  * @param {string} text - The user's message
@@ -23,14 +26,20 @@ const simEnabledThreads = new Map();
 async function fetchSimsimiReply(text) {
   try {
     const encodedText = encodeURIComponent(text);
-    // Always return some response for testing
     if (text.trim().length === 0) {
       return { error: false, data: { success: "🤖 Simsimi needs something to reply to!" } };
     }
-    // Simulated bot response, replace with actual API call if needed
-    // const res = await axios.get(`https://api.simsimi.net/v2/?text=${encodedText}&lc=en`);
-    // return { error: false, data: res.data };
-    return { error: false, data: { success: "Hello! I'm Simsimi. How can I help you today?" } };
+    // Use the ooguy.com API as requested
+    const apiUrl = `https://simsimi.ooguy.com/sim?query=${encodedText}&apikey=${apiKey}`;
+    const res = await axios.get(apiUrl);
+    // ooguy.com API returns { message: "..." } for success or { error: "..." }
+    if (res.data && res.data.message) {
+      return { error: false, data: { success: res.data.message } };
+    } else if (res.data && res.data.error) {
+      return { error: false, data: { error: res.data.error } };
+    } else {
+      return { error: false, data: { error: "🤖 Simsimi didn't understand that." } };
+    }
   } catch (err) {
     console.error("Simsimi API error:", err.message);
     return { error: true, data: null };
