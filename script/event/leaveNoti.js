@@ -2,7 +2,7 @@ module.exports.config = {
     name: "leave",
     eventType: ["log:unsubscribe"],
     version: "1.0.0",
-    credits: "Mirai Team",
+    credits: "vern",
     description: "Notify when the bot or a user leaves the group",
     dependencies: {
         "fs-extra": "",
