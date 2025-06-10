@@ -1,4 +1,9 @@
 <h1 align="center">🦅 AUTOBOT-VRN 🦅</h1>
+
+<p align="center">
+  <img src="https://media1.giphy.com/media/v1.Y2lkPTZjMDliOTUyNHVkdnlnNGV5MWF6b3FsdGM4MnJyaGloZm84bTVldGhkM29lNTNhcSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/6wdZAQm2unplu/giphy.gif" alt="AUTOBOT-VRN" width="400" style="border-radius: 12px; box-shadow: 0 0 20px #00f2ff;">
+</p>
+
 <p align="center">
   <b>The ultimate Facebook Messenger bot framework built with <code>ws3-fca</code> for lightning-fast, modular automation.</b><br/>
   Designed for power users, admins, and developers who want control, speed, and customization.
@@ -29,16 +34,16 @@
 
 ### ✨ Features
 
-- 🔐 **Login via Facebook cookies** — no need for email/password
-- 🧩 **Modular Command System** — easily extend with custom `/modules/`
-- 🧠 **Auto-replies & Smart Responses** — fully customizable
-- 🎲 **Mini-Games & Spam Utilities** — interact and play
-- 👑 **Admin Commands** — protect your bot with role-based actions
-- 🧬 **Toggleable Modes (vernmode, autoreact, etc.)** — switch behaviors instantly
-- 🧾 **Local JSON Database** — config, cache, state — all saved
-- ⏱ **Scheduled Messages & Responses** — automate at intervals
-- 📎 **Media Support** — images, GIFs, attachments via command
-- 🎛 **Hot-Reload Support** — update modules without restart
+- 🔐 **Login via Facebook cookies** — no need for email/password  
+- 🧩 **Modular Command System** — easily extend with custom `/modules/`  
+- 🧠 **Auto-replies & Smart Responses** — fully customizable  
+- 🎲 **Mini-Games & Spam Utilities** — interact and play  
+- 👑 **Admin Commands** — protect your bot with role-based actions  
+- 🧬 **Toggleable Modes (vernmode, autoreact, etc.)** — switch behaviors instantly  
+- 🧾 **Local JSON Database** — config, cache, state — all saved  
+- ⏱ **Scheduled Messages & Responses** — automate at intervals  
+- 📎 **Media Support** — images, GIFs, attachments via command  
+- 🎛 **Hot-Reload Support** — update modules without restart  
 
 ---
 
