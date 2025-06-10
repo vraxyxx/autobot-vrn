@@ -23,7 +23,7 @@
 💡 Experience the bot instantly:  
 🌐 **[Launch AUTOBOT-VRN on Render](https://vernesg-auto-bot.onrender.com/)**
 
-> ⚠️ *Note: This is a live hosted instance for preview/demo purposes. Use responsibly.*
+> ⚠️ *Note: This is free to use just click the website above.*
 
 ---
 
