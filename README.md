@@ -1,20 +1,36 @@
-# autobot-vrn
+<h1 align="center">🤖 autobot-vrn</h1>
+<p align="center">
+  A powerful, modular Facebook Messenger bot framework using <b>ws3-fca</b>, built for speed, customization, and automation.
+</p>
 
-A versatile, modular Facebook Messenger bot built with Node.js, designed for automation, fun commands, and utility functions. Supports cookie-based login and various interaction modules.
+<p align="center">
+  <img src="https://img.shields.io/github/stars/vernesg/autobot-vrn?style=for-the-badge" alt="Stars">
+  <img src="https://img.shields.io/github/forks/vernesg/autobot-vrn?style=for-the-badge" alt="Forks">
+  <img src="https://img.shields.io/github/license/vernesg/autobot-vrn?style=for-the-badge" alt="License">
+</p>
 
-## Features
+---
 
-- Modular command-based architecture
-- Facebook Messenger automation (auto-reply, auto-like, auto-comment, etc.)
-- Support for cookie login
-- Fun commands, games, information retrieval, spamming tools
-- Toggleable auto-response modes
-- Lightweight and easy to customize
+### ✨ Features
 
-## Installation
+- 📥 **Cookie-based login** (no email/pass needed)
+- 🧩 **Modular command system** (`/modules/`)
+- 🎮 Auto-replies, spamming, mini-games, image replies
+- 🕹️ Admin-only commands & toggleable bot modes
+- 📦 Local JSON-based database for config/storage
+- 📅 Scheduled tasks & auto-responses
+- 📁 Easy-to-write new modules
 
-1. **Clone the repository**
+---
 
-   ```bash
-   git clone https://github.com/vernesg/autobot-vrn.git
-   cd autobot-vrn
+### 🛠️ Installation
+
+```bash
+# Clone the repo
+git clone https://github.com/vernesg/autobot-vrn.git
+cd autobot-vrn
+
+# Install dependencies
+npm install
+
+# Paste your Facebook cookie into config.json
