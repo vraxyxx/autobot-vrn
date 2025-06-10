@@ -1,4 +1,4 @@
-<h1 align="center">🦅 autobot-vrn 🔥</h1>
+<h1 align="center">🦅 autobot-vrn 🦅</h1>
 <p align="center">
   A powerful, modular Facebook Messenger bot framework using <b>ws3-fca</b>, built for speed, customization, and automation.
 </p>
