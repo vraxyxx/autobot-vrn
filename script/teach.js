@@ -1,110 +1,68 @@
-const axios = require("axios");
-const moment = require("moment-timezone");
+const axios = require('axios');
 
 module.exports.config = {
   name: "teach",
-  version: "1.0.1",
-  hasPermssion: 0,
-  credits: "Priyansh Rajput",
-  description: "Teach Sim how to respond to specific messages.",
-  commandCategory: "Sim",
-  usages: "",
-  cooldowns: 2,
-  dependencies: { axios: "" }
+  version: "1.0.0",
+  role: 0,
+  credits: "vern",
+  description: "Teach the chatbot a new question and answer (Priyansh SIM API).",
+  usage: "/teach <question> | <answer>",
+  prefix: true,
+  cooldowns: 3,
+  commandCategory: "AI"
 };
 
-module.exports.run = ({ api, event }) => {
-  const { threadID, messageID, senderID } = event;
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID } = event;
+  const prefix = "/"; // Adjust if your bot uses a different prefix
 
-  return api.sendMessage(
-    "[ 𝐒𝐈𝐌 ] - Reply to this message with the question you want to teach Sim.",
-    threadID,
-    (err, info) => {
-      if (err) return;
-      global.client.handleReply.push({
-        name: module.exports.config.name,
-        messageID: info.messageID,
-        step: 1,
-        content: {
-          id: senderID,
-          ask: "",
-          ans: ""
-        }
-      });
-    },
-    messageID
-  );
-};
+  // Combine all args and split by the first '|'
+  const input = args.join(" ");
+  const parts = input.split("|");
 
-module.exports.handleReply = async ({ api, event, handleReply }) => {
-  const { threadID, messageID, senderID, body } = event;
-  const timeZ = moment.tz("Asia/Kolkata").format("HH:mm:ss | DD/MM/YYYY");
+  if (parts.length < 2) {
+    const usageMessage =
+      `════『 𝗧𝗘𝗔𝗖𝗛 𝗔𝗜 』════\n\n` +
+      `⚠️ Please provide a question and an answer separated by '|'.\n\n` +
+      `📌 Usage: ${prefix}teach <question> | <answer>\n` +
+      `💬 Example: ${prefix}teach What is AI? | Artificial Intelligence\n\n` +
+      `> Powered by Priyansh SIM API`;
+    return api.sendMessage(usageMessage, threadID, messageID);
+  }
 
-  // Only the original user can continue the teach flow
-  if (handleReply.content.id !== senderID) return;
-
-  const input = body.trim();
-  const content = handleReply.content;
-
-  // Helper to move to the next step
-  const sendStep = (text, step, updatedContent) =>
-    api.sendMessage(text, threadID, async (err, info) => {
-      if (err) return;
-      // Remove the old handleReply
-      const idx = global.client.handleReply.indexOf(handleReply);
-      if (idx > -1) global.client.handleReply.splice(idx, 1);
-      // Optionally unsend the previous bot message for tidiness
-      try { await api.unsendMessage(handleReply.messageID); } catch (e) {}
-
-      // Register the next step
-      global.client.handleReply.push({
-        name: module.exports.config.name,
-        messageID: info.messageID,
-        step: step,
-        content: updatedContent
-      });
-    }, messageID);
-
-  // Helper for final response (cleans up handleReply)
-  const sendFinal = async (msg) => {
-    const idx = global.client.handleReply.indexOf(handleReply);
-    if (idx > -1) global.client.handleReply.splice(idx, 1);
-    try { await api.unsendMessage(handleReply.messageID); } catch (e) {}
-    return api.sendMessage(msg, threadID, messageID);
-  };
+  const ask = parts[0].trim();
+  const ans = parts.slice(1).join("|").trim();
 
   try {
-    switch (handleReply.step) {
-      case 1:
-        content.ask = input;
-        return sendStep("[ 𝐒𝐈𝐌 ] - Great! Now reply with Sim's answer to this question.", 2, content);
+    // Loading message
+    const waitMsg = `════『 𝗧𝗘𝗔𝗖𝗛 𝗔𝗜 』════\n\n📤 Teaching the bot your Q&A...\nPlease wait.`;
+    await api.sendMessage(waitMsg, threadID, messageID);
 
-      case 2:
-        content.ans = input;
+    // API call
+    const apiUrl = `https://sim-api-by-priyansh.glitch.me/sim?type=teach&ask=${encodeURIComponent(ask)}&ans=${encodeURIComponent(ans)}&apikey=PriyanshVip`;
+    const response = await axios.get(apiUrl);
 
-        // Call the teaching API
-        let res;
-        try {
-          res = await axios.get(encodeURI(
-            `https://sim-api-by-priyansh.glitch.me/sim?type=teach&ask=${content.ask}&ans=${content.ans}&apikey=PriyanshVip`
-          ));
-        } catch (err) {
-          return sendFinal("❌ API request failed. Please try again later.");
-        }
+    let resultMsg = `════『 𝗧𝗘𝗔𝗖𝗛 𝗔𝗜 』════\n\n`;
 
-        if (res.data?.error) {
-          return sendFinal(`❌ Error: ${res.data.error}`);
-        }
-
-        return sendFinal(
-          `[ 𝐒𝐈𝐌 ] - Successfully taught Sim!\n\n🗨️ ${content.ask} → 💬 ${content.ans}\n⏰ Taught at: ${timeZ}`
-        );
-
-      default:
-        return;
+    if (response.data && (response.data.result || response.data.message)) {
+      resultMsg += `${response.data.result || response.data.message}`;
+    } else if (typeof response.data === "string") {
+      resultMsg += response.data;
+    } else {
+      resultMsg += "⚠️ No clear response from the Teach API.";
     }
-  } catch (err) {
-    console.error("Teach error:", err);
-    return api.sendMessage(`❌ An error occurred.\n${err.message}`, threadID, messageID);
+
+    resultMsg += `\n\n> Powered by Priyansh SIM API`;
+    return api.sendMessage(resultMsg, threadID, messageID);
+
+  } catch (error) {
+    console.error('❌ Error in teach command:', error.message || error);
+
+    const errorMessage =
+      `════『 𝗧𝗘𝗔𝗖𝗛 𝗔𝗜 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to teach the AI.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
+      `> Please try again later.`;
+
+    return api.sendMessage(errorMessage, threadID, messageID);
   }
 };
