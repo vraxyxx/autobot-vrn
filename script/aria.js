@@ -48,7 +48,7 @@ module.exports.run = async function ({ api, event, args }) {
     let resultMsg = `════『 𝗔𝗥𝗜𝗔 』════\n\n`;
     resultMsg += `❓ Prompt: ${prompt}\n`;
     resultMsg += `💬 Answer: ${answer}\n\n`;
-    resultMsg += `> Powered by Rapido Aria API`;
+    resultMsg += `> Thanks for using Vern-Autobot site`;
 
     return api.sendMessage(resultMsg, threadID, messageID);
 
