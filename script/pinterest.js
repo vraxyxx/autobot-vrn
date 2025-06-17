@@ -1,37 +1,74 @@
+const axios = require('axios');
+
 module.exports.config = {
-    name: "pinterest",
-    version: "1.0.0",
-    hasPermssion: 0,
-    credits: "Vern",
-    description: "Image search",
-    commandCategory: "Search",
-    usePrefix: false,
-    usages: "[Text]",
-    cooldowns: 0,
+  name: "pinterest",
+  version: "1.0",
+  credits: "vern", // DO NOT CHANGE
+  description: "Search images from Pinterest",
+  usage: "pinterest <search term> - <number of images>",
+  cooldown: 5,
+  permissions: [0],
+  commandCategory: "image",
 };
-module.exports.run = async function({ api, event, args }) {
-    const axios = require("axios");
-    const fs = require("fs-extra");
-    const request = require("request");
-    const keySearch = args.join(" ");
-    if(keySearch.includes("-") == false) return api.sendMessage('Please enter in the format, example: pinterest Priyansh - 10 (it depends on you how many images you want to appear in the result)', event.threadID, event.messageID)
-    const keySearchs = keySearch.substr(0, keySearch.indexOf('-'))
-    const numberSearch = keySearch.split("-").pop() || 6
-    const res = await axios.get(`https://api-dien.kira1011.repl.co/pinterest?search=${encodeURIComponent(keySearchs)}`);
-    const data = res.data.data;
-    var num = 0;
-    var imgData = [];
-    for (var i = 0; i < parseInt(numberSearch); i++) {
-      let path = __dirname + `/cache/${num+=1}.jpg`;
-      let getDown = (await axios.get(`${data[i]}`, { responseType: 'arraybuffer' })).data;
-      fs.writeFileSync(path, Buffer.from(getDown, 'utf-8'));
-      imgData.push(fs.createReadStream(__dirname + `/cache/${num}.jpg`));
+
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID } = event;
+
+  if (!args || args.length === 0) {
+    return api.sendMessage(
+      "🖼️ | Invalid format!\n\nUse:\npinterest <search term> - <number of images>\nExample: pinterest cat - 5",
+      threadID,
+      messageID
+    );
+  }
+
+  const input = args.join(" ");
+  const [searchTerm, count] = input.split(" - ");
+
+  if (!searchTerm || !count) {
+    return api.sendMessage(
+      "🖼️ | Invalid format!\n\nUse:\npinterest <search term> - <number of images>\nExample: pinterest cat - 5",
+      threadID,
+      messageID
+    );
+  }
+
+  const numOfImages = parseInt(count.trim());
+
+  if (isNaN(numOfImages) || numOfImages < 1 || numOfImages > 10) {
+    return api.sendMessage(
+      "⚠️ | Please specify a valid number of images between 1 and 10.",
+      threadID,
+      messageID
+    );
+  }
+
+  try {
+    const apiUrl = `https://jonell01-ccprojectsapihshs.hf.space/api/pin?title=${encodeURIComponent(searchTerm)}&count=${numOfImages}`;
+    const response = await axios.get(apiUrl);
+    const imageUrls = response.data?.data?.slice(0, numOfImages) || [];
+
+    if (imageUrls.length === 0) {
+      return api.sendMessage(
+        `❌ | No results found for: "${searchTerm}"`,
+        threadID,
+        messageID
+      );
     }
-    api.sendMessage({
-        attachment: imgData,
-        body: numberSearch + 'Search results for keyword: '+ keySearchs
-    }, event.threadID, event.messageID)
-    for (let ii = 1; ii < parseInt(numberSearch); ii++) {
-        fs.unlinkSync(__dirname + `/cache/${ii}.jpg`)
+
+    for (const url of imageUrls) {
+      await api.sendMessage({
+        body: "",
+        attachment: await global.utils.getStreamFromURL(url)
+      }, threadID);
     }
+
+  } catch (err) {
+    console.error("Pinterest API Error:", err);
+    return api.sendMessage(
+      "❌ | Failed to fetch images. Please try again later.",
+      threadID,
+      messageID
+    );
+  }
 };
