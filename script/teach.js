@@ -1,68 +1,53 @@
-const axios = require('axios');
+const fs = require("fs");
+const path = require("path");
 
 module.exports.config = {
-  name: "teach",
-  version: "1.0.0",
-  role: 0,
-  credits: "vern",
-  description: "Teach the chatbot a new question and answer (Priyansh SIM API).",
-  usage: "/teach <question> | <answer>",
-  prefix: true,
-  cooldowns: 3,
-  commandCategory: "AI"
+    name: 'teach',
+    version: '1.1.0',
+    role: 0,
+    description: "Teach the bot to respond like a person (locally)",
+    usage: "teach [question] | [answer]",
+    credits: 'Developer',
+    cooldown: 3,
 };
 
-module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID } = event;
-  const prefix = "/"; // Adjust if your bot uses a different prefix
+const knowledgeFilePath = path.join(__dirname, "knowledge.json"); // Store knowledge in a JSON file
 
-  // Combine all args and split by the first '|'
-  const input = args.join(" ");
-  const parts = input.split("|");
+// Function to load the knowledge base
+function loadKnowledge() {
+    try {
+        const data = fs.readFileSync(knowledgeFilePath, "utf8");
+        return JSON.parse(data);
+    } catch (error) {
+        return {}; // Return empty object if file doesn't exist or is invalid
+    }
+}
 
-  if (parts.length < 2) {
-    const usageMessage =
-      `════『 𝗧𝗘𝗔𝗖𝗛 𝗔𝗜 』════\n\n` +
-      `⚠️ Please provide a question and an answer separated by '|'.\n\n` +
-      `📌 Usage: ${prefix}teach <question> | <answer>\n` +
-      `💬 Example: ${prefix}teach What is AI? | Artificial Intelligence\n\n` +
-      `> Powered by Priyansh SIM API`;
-    return api.sendMessage(usageMessage, threadID, messageID);
-  }
+// Function to save the knowledge base
+function saveKnowledge(knowledge) {
+    fs.writeFileSync(knowledgeFilePath, JSON.stringify(knowledge, null, 2), "utf8");
+}
 
-  const ask = parts[0].trim();
-  const ans = parts.slice(1).join("|").trim();
+module.exports.run = async function({ api, event, args }) {
+    let { messageID, threadID } = event;
+    const input = args.join(" ").split("|");
 
-  try {
-    // Loading message
-    const waitMsg = `════『 𝗧𝗘𝗔𝗖𝗛 𝗔𝗜 』════\n\n📤 Teaching the bot your Q&A...\nPlease wait.`;
-    await api.sendMessage(waitMsg, threadID, messageID);
-
-    // API call
-    const apiUrl = `https://sim-api-by-priyansh.glitch.me/sim?type=teach&ask=${encodeURIComponent(ask)}&ans=${encodeURIComponent(ans)}&apikey=PriyanshVip`;
-    const response = await axios.get(apiUrl);
-
-    let resultMsg = `════『 𝗧𝗘𝗔𝗖𝗛 𝗔𝗜 』════\n\n`;
-
-    if (response.data && (response.data.result || response.data.message)) {
-      resultMsg += `${response.data.result || response.data.message}`;
-    } else if (typeof response.data === "string") {
-      resultMsg += response.data;
-    } else {
-      resultMsg += "⚠️ No clear response from the Teach API.";
+    if (input.length < 2) {
+        if(args.length == 0){
+            return api.sendMessage("Usage: teach [question] | [answer]", threadID, messageID);
+        } else if(args.join(" ").includes("|")) {
+            return api.sendMessage("Please provide both a question and an answer.", threadID, messageID);
+        } else {
+            return api.sendMessage("Please use '|' character to separate the question and answer.", threadID, messageID);
+        }
     }
 
-    resultMsg += `\n\n> Powered by Priyansh SIM API`;
-    return api.sendMessage(resultMsg, threadID, messageID);
+    const question = input[0].trim().toLowerCase(); // Convert to lowercase for easier matching
+    const answer = input[1].trim();
 
-  } catch (error) {
-    console.error('❌ Error in teach command:', error.message || error);
+    const knowledge = loadKnowledge();
+    knowledge[question] = answer;
+    saveKnowledge(knowledge);
 
-    const errorMessage =
-      `════『 𝗧𝗘𝗔𝗖𝗛 𝗔𝗜 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
-      `🚫 Failed to teach the AI.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
-      `> Please try again later.`;
-
-    return api.sendMessage(errorMessage, threadID, messageID);
-  }
+    api.sendMessage(`Successfully taught. Question: ${input[0].trim()} | Answer: ${input[1].trim()}`, threadID, messageID);
 };
