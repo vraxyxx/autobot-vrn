@@ -7,7 +7,7 @@ module.exports.config = {
   type: "event",
   eventType: ["message", "message_reply"],
   version: "1.0.0",
-  credits: "vern", // DO NOT CHANGE
+  credits: "aminul", // DO NOT CHANGE
 };
 
 let isCronStarted = false;
