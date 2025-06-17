@@ -1,14 +1,17 @@
 module.exports.config = {
   name: "autoreact",
   type: "event",
-  eventType: "message", // Make sure this matches your framework requirements
-  version: "1.0",
+  eventType: "message", // This must match your framework
+  version: "1.1",
   credits: "Vern", // DO NOT CHANGE
 };
 
 module.exports.run = async function ({ api, event }) {
-  if (!event.body) return;
-  const message = event.body.toLowerCase();
+  const { body, messageID, reply_to } = event;
+
+  if (!body) return;
+
+  const messageText = body.toLowerCase();
 
   const reactionsMap = {
     "😂": [
@@ -18,15 +21,24 @@ module.exports.run = async function ({ api, event }) {
     ],
     "😭": [
       "cry", "sad", "crying", "bakit ka malungkot?", "bakit ka malongkot?",
-      "hindi na", "sad ka", "walang ulam"
+      "hindi na", "sad ka", "walang ulam", "iyak", "naiyak"
     ],
-    "🥰": ["love", "mahal", "crush"],
-    "🎮": ["laro", "laru", "game", "mc", "minecraft", "ml", "mlbb", "mobile legends", "mobile legends bang bang", "cod", "call of duty"]
+    "🥰": [
+      "love", "mahal", "crush", "kilig", "iloveyou", "ily"
+    ],
+    "🎮": [
+      "laro", "laru", "game", "gaming", "mc", "minecraft", "ml", "mlbb",
+      "mobile legends", "cod", "call of duty", "rank", "gg"
+    ]
   };
 
   for (const [reaction, keywords] of Object.entries(reactionsMap)) {
-    if (keywords.some(word => message.includes(word))) {
-      await api.setMessageReaction(reaction, event.messageID, null, false);
+    if (keywords.some(word => messageText.includes(word))) {
+      try {
+        await api.setMessageReaction(reaction, messageID, null, false);
+      } catch (err) {
+        console.error("[AutoReact Error]:", err.message);
+      }
       break;
     }
   }
