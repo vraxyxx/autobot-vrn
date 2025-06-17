@@ -1,7 +1,7 @@
 module.exports.config = {
   name: "autoreact",
   type: "event",
-  eventType: ["message"],
+  eventType: "message", // Make sure this matches your framework requirements
   version: "1.0",
   credits: "Vern", // DO NOT CHANGE
 };
@@ -26,7 +26,7 @@ module.exports.run = async function ({ api, event }) {
 
   for (const [reaction, keywords] of Object.entries(reactionsMap)) {
     if (keywords.some(word => message.includes(word))) {
-      api.setMessageReaction(reaction, event.messageID, event.threadID, api);
+      await api.setMessageReaction(reaction, event.messageID, null, false);
       break;
     }
   }
