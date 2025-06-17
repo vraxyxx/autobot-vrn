@@ -2,48 +2,50 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "imgur",
-  version: "1.0.0",
-  author: "vern",
-  description: "Process an image via the Imgur API endpoint.",
-  prefix: true,
-  cooldowns: 5,
+  version: "1.0",
+  credits: "vern", // Do not change
+  description: "Convert replied image to Imgur JPG link",
+  usage: "Reply to an image with: imgur",
+  cooldown: 5,
+  permissions: [0],
   commandCategory: "image",
-  dependencies: {
-    axios: ""
-  }
 };
 
-module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID } = event;
-  const imageUrl = args[0];
+module.exports.run = async function ({ api, event }) {
+  const { messageReply, threadID, messageID } = event;
 
-  if (!imageUrl) {
+  // Require user to reply to an image
+  if (!messageReply || !messageReply.attachments || messageReply.attachments[0].type !== "photo") {
     return api.sendMessage(
-      "🖼️ Please provide an image URL.\n\nUsage: /imgur [image_url]\nExample: /imgur https://i.imgur.com/Zu15xb4.jpeg",
+      `❌ | Please reply to an image to convert it to Imgur JPG.`,
       threadID,
       messageID
     );
   }
 
+  const imageUrl = messageReply.attachments[0].url;
+
+  // Notify processing
+  api.sendMessage("🖼️ | Uploading image to Imgur...", threadID, messageID);
+
   try {
-    // Send loading message
-    await api.sendMessage("🖼️ Processing your image, please wait...", threadID, messageID);
-
     const apiUrl = `https://kaiz-apis.gleeze.com/api/imgur?url=${encodeURIComponent(imageUrl)}&apikey=4fe7e522-70b7-420b-a746-d7a23db49ee5`;
+    const response = await axios.get(apiUrl);
 
-    // Get the processed image as a stream
-    const response = await axios.get(apiUrl, { responseType: "stream" });
+    const imgurLink = response?.data?.url || response?.data?.data?.url;
 
-    // Send the image back as an attachment
+    if (!imgurLink) {
+      throw new Error("Imgur response did not contain a valid URL.");
+    }
+
     return api.sendMessage({
-      body: "🖼️ Here is your processed image!",
-      attachment: response.data
+      body: `✅ | Uploaded Successfully:\n\n${imgurLink}`
     }, threadID, messageID);
 
   } catch (error) {
-    console.error("❌ Error in imgur command:", error.message || error);
+    console.error("❌ Error uploading to Imgur:", error);
     return api.sendMessage(
-      `❌ Failed to process image.\nError: ${error.response?.data?.message || error.message || "Unknown error"}`,
+      `❌ | Failed to upload image to Imgur.\nReason: ${error.message || "Unknown error"}`,
       threadID,
       messageID
     );
