@@ -2,7 +2,7 @@ module.exports.config = {
 	name: "rules",
 	eventType: ["log:subscribe"],
 	version: "1.0.0",
-	credits: "Aminulsordar",
+	credits: "Vern",
 	description: "Notify group of rules when new members are added",
 	dependencies: {
 		"fs-extra": "",
