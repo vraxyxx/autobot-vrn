@@ -1,17 +1,14 @@
 module.exports.config = {
   name: "autoreact",
   type: "event",
-  eventType: "message", // This must match your framework
+  eventType: "message", // This must match your framework's event type for messages
   version: "1.1",
   credits: "Vern", // DO NOT CHANGE
 };
 
 module.exports.run = async function ({ api, event }) {
-  const { body, messageID, reply_to } = event;
-
-  if (!body) return;
-
-  const messageText = body.toLowerCase();
+  if (!event || !event.body || !event.messageID) return;
+  const messageText = event.body.toLowerCase();
 
   const reactionsMap = {
     "😂": [
@@ -35,9 +32,9 @@ module.exports.run = async function ({ api, event }) {
   for (const [reaction, keywords] of Object.entries(reactionsMap)) {
     if (keywords.some(word => messageText.includes(word))) {
       try {
-        await api.setMessageReaction(reaction, messageID, null, false);
+        await api.setMessageReaction(reaction, event.messageID, null, false);
       } catch (err) {
-        console.error("[AutoReact Error]:", err.message);
+        console.error("[AutoReact Error]:", err.message || err);
       }
       break;
     }
