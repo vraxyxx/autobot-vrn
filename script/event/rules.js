@@ -17,7 +17,7 @@ module.exports.run = async function ({ api, event }) {
 	} else {
 
 		try {
-			const rules = `🌟 𝗚𝗿𝗼𝘂𝗽 𝗥𝘂𝗹𝗲𝘀
+			const rules = `🌟 𝗚𝗿𝗼𝘂𝗽 𝗥𝘂𝗹𝗲𝘀 - Vern
 
 𝗡𝗼 𝗦𝗽𝗮𝗺𝗺𝗶𝗻𝗴: Please refrain from excessive posting or sending repeated messages. Respect others' space in the group.
 
