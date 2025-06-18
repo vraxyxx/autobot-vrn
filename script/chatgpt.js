@@ -1,83 +1,62 @@
 const axios = require('axios');
 
-module.exports = {
-  name: 'chatgpt',
-  description: 'Chat with GPT-4o Pro and analyze images.',
-  usage: '/chatgpt [question] or reply to an image',
-  cooldown: 3,
-  permissions: 0,
-  credits: 'vern',
-  commandCategory: 'AI',
+module.exports.config = {
+  name: "chatgpt",
+  version: "1.0.0",
+  role: 0,
+  credits: "vraxyxx",
+  description: "Ask ChatGPT any question using the Ferdev API.",
+  usage: "/chatgpt <your question>",
+  prefix: true,
+  cooldowns: 3,
+  commandCategory: "AI"
+};
 
-  async execute(api, event, args, commands, prefix, admins, appState, sendMessage) {
-    const { threadID, messageID, messageReply, attachments, senderID } = event;
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID } = event;
+  const prompt = args.join(' ').trim();
+  const prefix = "/"; // Adjust if your bot uses a different prefix
 
-    if (args.length === 0 && (!messageReply || !messageReply.attachments?.length) && attachments.length === 0) {
-      return sendMessage(api, {
-        threadID,
-        message: '⚠️ Please provide a question or reply to an image.\n\nExample:\n/chatgpt What is AI?\n(Or reply to an image with /chatgpt)'
-      }, messageID);
-    }
+  // No prompt provided
+  if (!prompt) {
+    const usageMessage = `════『 𝗖𝗛𝗔𝗧𝗚𝗣𝗧 』════\n\n` +
+      `⚠️ Please provide a question or prompt for ChatGPT.\n\n` +
+      `📌 Usage: ${prefix}chatgpt <your question>\n` +
+      `💬 Example: ${prefix}chatgpt 1+1\n\n` +
+      `> Thank you for using ChatGPT!`;
 
-    const query = args.join(' ') || "Analyze this image.";
-    let imageUrl = null;
+    return api.sendMessage(usageMessage, threadID, messageID);
+  }
 
-    // Extract image URL from reply
-    if (messageReply?.attachments?.length > 0) {
-      const replyImage = messageReply.attachments.find(att => att.type === 'photo');
-      if (replyImage?.url) imageUrl = replyImage.url;
-    }
+  try {
+    // Send loading message first
+    const waitMsg = `════『 𝗖𝗛𝗔𝗧𝗚𝗣𝗧 』════\n\n` +
+      `🤖 Thinking about: "${prompt}"\nPlease wait a moment...`;
+    await api.sendMessage(waitMsg, threadID, messageID);
 
-    // Extract image URL from current attachments
-    if (!imageUrl && attachments.length > 0) {
-      const attachedImage = attachments.find(att => att.type === 'photo');
-      if (attachedImage?.url) imageUrl = attachedImage.url;
-    }
+    // Call the ChatGPT API
+    const apiUrl = "https://api.ferdev.my.id/ai/chatgpt";
+    const response = await axios.get(apiUrl, {
+      params: { prompt: prompt }
+    });
 
-    const imageParam = imageUrl ? `&imageUrl=${encodeURIComponent(imageUrl)}` : '';
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/gpt-4o-pro?ask=${encodeURIComponent(query)}&uid=${senderID}${imageParam}`;
+    // Prefer result field, fallback to other common fields or stringify
+    const answer = response.data?.result || response.data?.response || response.data?.answer || JSON.stringify(response.data);
 
-    try {
-      const response = await axios.get(apiUrl);
+    let resultMsg = `════『 𝗖𝗛𝗔𝗧𝗚𝗣𝗧 』════\n\n`;
+    resultMsg += `❓ Prompt: ${prompt}\n`;
+    resultMsg += `💬 Answer: ${answer}\n\n`;
+    resultMsg += `> Powered by Ferdev API`;
 
-      if (!response.data || !response.data.response) {
-        return sendMessage(api, {
-          threadID,
-          message: '⚠️ No response from GPT. Please try again.'
-        }, messageID);
-      }
+    return api.sendMessage(resultMsg, threadID, messageID);
 
-      const aiResponse = response.data.response.trim();
+  } catch (error) {
+    console.error('❌ Error in chatgpt command:', error.message || error);
 
-      // Extract possible image URL
-      const imageMatch = aiResponse.match(/(https?:\/\/[^\s)]+)/);
-      const extractedImageUrl = imageMatch?.[1];
+    const errorMessage = `════『 𝗖𝗛𝗔𝗧𝗚𝗣𝗧 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to get answer from ChatGPT.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
+      `> Please try again later.`;
 
-      if (extractedImageUrl && extractedImageUrl.includes("oaidalleapiprodscus.blob.core.windows.net")) {
-        await sendMessage(api, {
-          threadID,
-          attachment: {
-            type: 'image',
-            payload: {
-              url: extractedImageUrl,
-              is_reusable: true
-            }
-          }
-        }, messageID);
-      }
-
-      // Send GPT response message
-      await sendMessage(api, {
-        threadID,
-        message: `🤖 𝗚𝗣𝗧-𝟰𝗼 𝗣𝗿𝗼:\n\n${aiResponse}`
-      }, messageID);
-
-    } catch (err) {
-      console.error('[GPT-4o ERROR]', err.message || err);
-      return sendMessage(api, {
-        threadID,
-        message: '❌ Error connecting to the GPT API. Please try again later.'
-      }, messageID);
-    }
+    return api.sendMessage(errorMessage, threadID, messageID);
   }
 };
