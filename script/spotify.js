@@ -1,58 +1,70 @@
 const axios = require('axios');
-const fs = require('fs');
 
 module.exports.config = {
   name: "spotify",
-  version: "1.0",
-  credits: "vern", // DO NOT CHANGE
-  description: "Search and play Spotify music",
-  usage: "spotify <song name>",
-  cooldown: 5,
-  permissions: [0],
-  commandCategory: "music",
+  version: "1.0.0",
+  role: 0,
+  credits: "vraxyxx",
+  description: "Search for a song on Spotify using the Ferdev API.",
+  usage: "/spotify <song name or query>",
+  prefix: true,
+  cooldowns: 3,
+  commandCategory: "Music"
 };
 
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID } = event;
+  const query = args.join(' ').trim();
+  const prefix = "/"; // Adjust if your bot uses a different prefix
 
-  if (!args || args.length === 0) {
-    return api.sendMessage("🎵 Please provide a song name to search on Spotify.", threadID, messageID);
+  // No query provided
+  if (!query) {
+    const usageMessage = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 』════\n\n` +
+      `⚠️ Please provide a song name or search query.\n\n` +
+      `📌 Usage: ${prefix}spotify <song name or query>\n` +
+      `💬 Example: ${prefix}spotify love story\n\n` +
+      `> Thank you for using Spotify Search!`;
+
+    return api.sendMessage(usageMessage, threadID, messageID);
   }
 
-  const searchQuery = args.join(" ").trim();
-  const apiUrl = `https://hiroshi-api.onrender.com/tiktok/spotify?search=${encodeURIComponent(searchQuery)}`;
-
   try {
-    const { data } = await axios.get(apiUrl);
+    // Send loading message first
+    const waitMsg = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 』════\n\n` +
+      `🔎 Searching Spotify for: "${query}"\nPlease wait a moment...`;
+    await api.sendMessage(waitMsg, threadID, messageID);
 
-    if (!data || data.length === 0) {
-      return api.sendMessage("❌ No results found for that song.", threadID, messageID);
+    // Call the Spotify Search API
+    const apiUrl = "https://api.ferdev.my.id/search/spotify";
+    const response = await axios.get(apiUrl, {
+      params: {
+        query: query
+      }
+    });
+
+    const results = response.data?.result || [];
+    if (!Array.isArray(results) || results.length === 0) {
+      return api.sendMessage("❌ No results found for your search.", threadID, messageID);
     }
 
-    const { name: trackName, track, image, download } = data[0];
+    // Send up to 5 song results (adjust as desired)
+    let resultMsg = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 』════\n\n`;
+    resultMsg += `🔎 Results for: ${query}\n\n`;
+    results.slice(0, 5).forEach((song, idx) => {
+      resultMsg += `${idx + 1}. ${song.title || 'Unknown Title'} by ${song.artists?.join(', ') || 'Unknown Artist'}\n`;
+      resultMsg += `🔗 ${song.url || 'No URL'}\n\n`;
+    });
+    resultMsg += `> Powered by Ferdev API`;
 
-    // Send track info
-    const msg = `🎶 | Now Playing\n━━━━━━━━━━━━━━━\n🎧 Track: ${trackName}\n🔗 Listen: ${track}\n━━━━━━━━━━━━━━━`;
-    await api.sendMessage(msg, threadID);
-
-    // Send image if available
-    if (image) {
-      await api.sendMessage({
-        body: "",
-        attachment: await global.utils.getStreamFromURL(image)
-      }, threadID);
-    }
-
-    // Send audio if available
-    if (download) {
-      await api.sendMessage({
-        body: "🎧 Audio Preview:",
-        attachment: await global.utils.getStreamFromURL(download)
-      }, threadID, messageID);
-    }
+    return api.sendMessage(resultMsg, threadID, messageID);
 
   } catch (error) {
-    console.error("Spotify Error:", error);
-    return api.sendMessage("❌ An unexpected error occurred while fetching the song.", threadID, messageID);
+    console.error('❌ Error in spotify command:', error.message || error);
+
+    const errorMessage = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to search Spotify.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
+      `> Please try again later.`;
+
+    return api.sendMessage(errorMessage, threadID, messageID);
   }
 };
