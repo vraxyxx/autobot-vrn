@@ -2,73 +2,68 @@ const axios = require('axios');
 
 module.exports.config = {
   name: "pinterest",
-  version: "1.0",
-  credits: "vern", // DO NOT CHANGE
-  description: "Search images from Pinterest",
-  usage: "pinterest <search term> - <number of images>",
-  cooldown: 5,
-  permissions: [0],
-  commandCategory: "image",
+  version: "1.0.0",
+  role: 0,
+  credits: "vraxyxx",
+  description: "Search Pinterest images using the Ferdev API.",
+  usage: "/pinterest <search term>",
+  prefix: true,
+  cooldowns: 3,
+  commandCategory: "Search"
 };
 
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID } = event;
+  const query = args.join(' ').trim();
+  const prefix = "/"; // Adjust if your bot uses a different prefix
 
-  if (!args || args.length === 0) {
-    return api.sendMessage(
-      "🖼️ | Invalid format!\n\nUse:\npinterest <search term> - <number of images>\nExample: pinterest cat - 5",
-      threadID,
-      messageID
-    );
-  }
+  // No query provided
+  if (!query) {
+    const usageMessage = `════『 𝗣𝗜𝗡𝗧𝗘𝗥𝗘𝗦𝗧 』════\n\n` +
+      `⚠️ Please provide a search term for Pinterest.\n\n` +
+      `📌 Usage: ${prefix}pinterest <search term>\n` +
+      `💬 Example: ${prefix}pinterest cat\n\n` +
+      `> Thank you for using Pinterest Search!`;
 
-  const input = args.join(" ");
-  const [searchTerm, count] = input.split(" - ");
-
-  if (!searchTerm || !count) {
-    return api.sendMessage(
-      "🖼️ | Invalid format!\n\nUse:\npinterest <search term> - <number of images>\nExample: pinterest cat - 5",
-      threadID,
-      messageID
-    );
-  }
-
-  const numOfImages = parseInt(count.trim());
-
-  if (isNaN(numOfImages) || numOfImages < 1 || numOfImages > 10) {
-    return api.sendMessage(
-      "⚠️ | Please specify a valid number of images between 1 and 10.",
-      threadID,
-      messageID
-    );
+    return api.sendMessage(usageMessage, threadID, messageID);
   }
 
   try {
-    const apiUrl = `https://jonell01-ccprojectsapihshs.hf.space/api/pin?title=${encodeURIComponent(searchTerm)}&count=${numOfImages}`;
-    const response = await axios.get(apiUrl);
-    const imageUrls = response.data?.data?.slice(0, numOfImages) || [];
+    // Send loading message first
+    const waitMsg = `════『 𝗣𝗜𝗡𝗧𝗘𝗥𝗘𝗦𝗧 』════\n\n` +
+      `🔎 Searching Pinterest for: "${query}"\nPlease wait a moment...`;
+    await api.sendMessage(waitMsg, threadID, messageID);
 
-    if (imageUrls.length === 0) {
-      return api.sendMessage(
-        `❌ | No results found for: "${searchTerm}"`,
-        threadID,
-        messageID
-      );
+    // Call the Pinterest Search API
+    const apiUrl = "https://api.ferdev.my.id/search/pinterest";
+    const response = await axios.get(apiUrl, {
+      params: {
+        query: query
+      }
+    });
+
+    const results = response.data?.result || [];
+    if (!Array.isArray(results) || results.length === 0) {
+      return api.sendMessage("❌ No results found for your search.", threadID, messageID);
     }
 
-    for (const url of imageUrls) {
-      await api.sendMessage({
-        body: "",
-        attachment: await global.utils.getStreamFromURL(url)
-      }, threadID);
-    }
+    // Send up to 5 image links (or adjust as desired)
+    let resultMsg = `════『 𝗣𝗜𝗡𝗧𝗘𝗥𝗘𝗦𝗧 』════\n\n`;
+    resultMsg += `🔎 Results for: ${query}\n\n`;
+    results.slice(0, 5).forEach((img, idx) => {
+      resultMsg += `${idx + 1}. ${img}\n`;
+    });
+    resultMsg += `\n> Thanks for using vern-site!`;
 
-  } catch (err) {
-    console.error("Pinterest API Error:", err);
-    return api.sendMessage(
-      "❌ | Failed to fetch images. Please try again later.",
-      threadID,
-      messageID
-    );
+    return api.sendMessage(resultMsg, threadID, messageID);
+
+  } catch (error) {
+    console.error('❌ Error in pinterest command:', error.message || error);
+
+    const errorMessage = `════『 𝗣𝗜𝗡𝗧𝗘𝗥𝗘𝗦𝗧 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to search Pinterest.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
+      `> Please try again later.`;
+
+    return api.sendMessage(errorMessage, threadID, messageID);
   }
 };
