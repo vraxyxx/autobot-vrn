@@ -1,55 +1,73 @@
-const axios = require("axios");
+const axios = require('axios');
+const fs = require('fs-extra');
 
 module.exports.config = {
   name: "removebg",
-  version: "1.0",
-  credits: "vern", // Do not change
-  description: "Remove image background",
-  usage: "Reply to an image with: removebg",
-  cooldown: 5,
-  permissions: [0],
-  commandCategory: "image",
+  version: "1.0.0",
+  role: 0,
+  credits: "vraxyxx",
+  description: "Remove image background using the Ferdev API.",
+  usage: "/removebg <image link>",
+  prefix: true,
+  cooldowns: 3,
+  commandCategory: "Tools"
 };
 
-module.exports.run = async function ({ api, event }) {
-  const { messageReply, threadID, messageID } = event;
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID } = event;
+  const link = args.join(' ').trim();
+  const prefix = "/"; // Adjust if your bot uses a different prefix
 
-  // Check if user replied to an image
-  if (!messageReply || !messageReply.attachments || messageReply.attachments[0].type !== "photo") {
-    return api.sendMessage(
-      `❌ | Please reply to an image to remove its background.`,
-      threadID,
-      messageID
-    );
+  // No link provided
+  if (!link) {
+    const usageMessage = `════『 𝗥𝗘𝗠𝗢𝗩𝗘𝗕𝗚 』════\n\n` +
+      `⚠️ Please provide an image link to remove its background.\n\n` +
+      `📌 Usage: ${prefix}removebg <image link>\n` +
+      `💬 Example: ${prefix}removebg https://files.catbox.moe/91e6rp.jpg\n\n` +
+      `> Thank you for using RemoveBG!`;
+
+    return api.sendMessage(usageMessage, threadID, messageID);
   }
 
-  const imageUrl = messageReply.attachments[0].url;
-
-  // Notify processing
-  api.sendMessage("⌛ | Removing background, please wait...", threadID, messageID);
-
   try {
-    const apiUrl = `https://rapido.zetsu.xyz/api/remove-background?imageUrl=${encodeURIComponent(imageUrl)}`;
-    const response = await axios.get(apiUrl);
-    const resultUrl = response.data?.result;
+    // Send loading message first
+    const waitMsg = `════『 𝗥𝗘𝗠𝗢𝗩𝗘𝗕𝗚 』════\n\n` +
+      `🖼️ Removing background from: "${link}"\nPlease wait a moment...`;
+    await api.sendMessage(waitMsg, threadID, messageID);
 
-    if (resultUrl) {
-      return api.sendMessage({
-        body: "✅ | Background removed successfully!",
-        attachment: await global.utils.getStreamFromURL(resultUrl)
-      }, threadID);
-    } else {
-      return api.sendMessage(
-        `❌ | Failed to remove background.\nReason: ${response.data?.message || 'Unknown error'}`,
-        threadID
-      );
-    }
+    // Call the RemoveBG API
+    const apiUrl = "https://api.ferdev.my.id/tools/removebg";
+    const response = await axios.get(apiUrl, {
+      params: {
+        link: link
+      },
+      responseType: 'arraybuffer'
+    });
 
-  } catch (err) {
-    console.error("Error removing background:", err);
-    return api.sendMessage(
-      "❌ | An error occurred while processing the image. Please try again later.",
-      threadID
+    // Save the image to a temporary file
+    const tempPath = __dirname + `/cache/removebg_${Date.now()}.png`;
+    await fs.outputFile(tempPath, Buffer.from(response.data, "binary"));
+
+    // Send the resulting image
+    await api.sendMessage(
+      {
+        body: "✅ Here is your image with the background removed!",
+        attachment: fs.createReadStream(tempPath)
+      },
+      threadID,
+      async () => {
+        // Delete the temp file after sending
+        await fs.remove(tempPath);
+      },
+      messageID
     );
+  } catch (error) {
+    console.error('❌ Error in removebg command:', error.message || error);
+
+    const errorMessage = `════『 𝗥𝗘𝗠𝗢𝗩𝗘𝗕𝗚 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to remove background from image.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
+      `> Please try again later.`;
+
+    return api.sendMessage(errorMessage, threadID, messageID);
   }
 };
