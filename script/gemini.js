@@ -1,84 +1,64 @@
-const axios = require("axios");
-const { sendMessage } = require('../handles/sendMessage');
+const axios = require('axios');
 
-// Replace this with your actual API key
-const GEMINI_API_URL = "https://kaiz-apis.gleeze.com/api/gemini-vision";
-const GEMINI_API_KEY = "YOUR_APIKEY";
-
-const fontMapping = {
-  'A': '𝗔', 'B': '𝗕', 'C': '𝗖', 'D': '𝗗', 'E': '𝗘', 'F': '𝗙', 'G': '𝗚',
-  'H': '𝗛', 'I': '𝗜', 'J': '𝗝', 'K': '𝗞', 'L': '𝗟', 'M': '𝗠', 'N': '𝗡',
-  'O': '𝗢', 'P': '𝗣', 'Q': '𝗤', 'R': '𝗥', 'S': '𝗦', 'T': '𝗧', 'U': '𝗨',
-  'V': '𝗩', 'W': '𝗪', 'X': '𝗫', 'Y': '𝗬', 'Z': '𝗭',
-  'a': '𝗮', 'b': '𝗯', 'c': '𝗰', 'd': '𝗱', 'e': '𝗲', 'f': '𝗳', 'g': '𝗴',
-  'h': '𝗵', 'i': '𝗶', 'j': '𝗷', 'k': '𝗸', 'l': '𝗹', 'm': '𝗺', 'n': '𝗻',
-  'o': '𝗼', 'p': '𝗽', 'q': '𝗾', 'r': '𝗿', 's': '𝘀', 't': '𝘁', 'u': '𝘂',
-  'v': '𝘃', 'w': '𝘄', 'x': '𝘅', 'y': '𝘆', 'z': '𝘇'
-};
-
-function convertToBold(text) {
-  return [...text].map(char => fontMapping[char] || char).join('');
-}
-
-module.exports = {
+module.exports.config = {
   name: "gemini",
-  description: "Analyze images or text with Gemini Vision",
-  author: "vern",
-
-  async execute(senderId, args, pageAccessToken, event, imageUrl = "") {
-    const replied = event.message?.reply_to?.message || "";
-    const userPrompt = args.join(" ");
-    const finalPrompt = [replied, userPrompt].filter(Boolean).join(" ").trim();
-
-    if (!finalPrompt) {
-      return sendMessage(senderId, {
-        text: "❌ 𝗣𝗟𝗘𝗔𝗦𝗘 𝗥𝗘𝗣𝗟𝗬 𝗧𝗢 𝗔𝗡 𝗜𝗠𝗔𝗚𝗘 𝗢𝗥 𝗧𝗬𝗣𝗘 𝗔 𝗣𝗥𝗢𝗠𝗣𝗧."
-      }, pageAccessToken);
-    }
-
-    try {
-      // If imageUrl not passed, try to extract from reply or direct image
-      if (!imageUrl) {
-        const reply = event.message?.reply_to;
-        if (reply?.attachments?.[0]?.type === "image") {
-          imageUrl = reply.attachments[0].payload.url;
-        } else if (event.message?.attachments?.[0]?.type === "image") {
-          imageUrl = event.message.attachments[0].payload.url;
-        }
-      }
-
-      const res = await axios.get(GEMINI_API_URL, {
-        params: {
-          q: finalPrompt,
-          uid: senderId,
-          imageUrl,
-          apikey: GEMINI_API_KEY
-        }
-      });
-
-      const resultText = res.data?.response || "❌ No response from Gemini.";
-      const formatted = `
-𝗚𝗘𝗠𝗜𝗡𝗜 𝗩𝗜𝗦𝗜𝗢𝗡
-────────────────
-${convertToBold(resultText)}
-────────────────`;
-
-      await sendInChunks(senderId, formatted, pageAccessToken);
-
-    } catch (err) {
-      console.error("❌ Gemini Error:", err);
-      await sendMessage(senderId, {
-        text: `❌ Error: ${err.response?.data?.message || err.message || "Unknown error"}`
-      }, pageAccessToken);
-    }
-  }
+  version: "1.0.0",
+  role: 0,
+  credits: "vraxyxx",
+  description: "Ask Gemini AI any question using the Ferdev API.",
+  usage: "/gemini <your question>",
+  prefix: true,
+  cooldowns: 3,
+  commandCategory: "AI"
 };
 
-async function sendInChunks(senderId, text, pageAccessToken) {
-  const maxLen = 2000;
-  const chunks = text.match(new RegExp(`.{1,${maxLen}}`, "g"));
-  for (const msg of chunks) {
-    await sendMessage(senderId, { text: msg }, pageAccessToken);
-    await new Promise(r => setTimeout(r, 400));
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID } = event;
+  const prompt = args.join(' ').trim();
+  const prefix = "/"; // Adjust if your bot uses a different prefix
+
+  // No prompt provided
+  if (!prompt) {
+    const usageMessage = `════『 𝗚𝗘𝗠𝗜𝗡𝗜 』════\n\n` +
+      `⚠️ Please provide a question or prompt for Gemini AI.\n\n` +
+      `📌 Usage: ${prefix}gemini <your question>\n` +
+      `💬 Example: ${prefix}gemini 1+1\n\n` +
+      `> Thank you for using Gemini AI!`;
+
+    return api.sendMessage(usageMessage, threadID, messageID);
   }
-}
+
+  try {
+    // Send loading message first
+    const waitMsg = `════『 𝗚𝗘𝗠𝗜𝗡𝗜 』════\n\n` +
+      `🤖 Thinking about: "${prompt}"\nPlease wait a moment...`;
+    await api.sendMessage(waitMsg, threadID, messageID);
+
+    // Call the Gemini API
+    const apiUrl = "https://api.ferdev.my.id/ai/gemini";
+    const response = await axios.get(apiUrl, {
+      params: {
+        prompt: prompt
+      }
+    });
+
+    // Prefer result, fallback to other common fields or stringify
+    const answer = response.data?.result || response.data?.response || response.data?.answer || JSON.stringify(response.data);
+
+    let resultMsg = `════『 𝗚𝗘𝗠𝗜𝗡𝗜 』════\n\n`;
+    resultMsg += `❓ Prompt: ${prompt}\n`;
+    resultMsg += `💬 Answer: ${answer}\n\n`;
+    resultMsg += `> Thanks for using vern-bot-site`;
+
+    return api.sendMessage(resultMsg, threadID, messageID);
+
+  } catch (error) {
+    console.error('❌ Error in gemini command:', error.message || error);
+
+    const errorMessage = `════『 𝗚𝗘𝗠𝗜𝗡𝗜 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to get answer from Gemini API.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
+      `> Please try again later.`;
+
+    return api.sendMessage(errorMessage, threadID, messageID);
+  }
+};
