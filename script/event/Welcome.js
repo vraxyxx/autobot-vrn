@@ -95,8 +95,8 @@ module.exports.handleEvent = async function ({ api, event }) {
 ║ ──────────────────
 ║ And Make Lots Of Friends =)
 ║ ──────-°°__𝗧𝗿𝘂𝘀𝘁 𝗺e 🔐 °__!!>☁️✨❤️
-║ My Owner ✦͙͙͙͙❥⃝∗⁎.ʚ Vern ɞ.⁎∗❥⃝**͙✦͙͙͙
-║ ❤️ Love you 😘 Vina ❤️😍
+║ My Owner ✦͙͙͙͙❥⃝∗⁎.ʚ Vern🦅 ɞ.⁎∗❥⃝**͙✦͙͙͙
+║ 🔥 Hello guys this bot is made by vern!
 ╚══════════════════════╝`;
                 await api.sendMessage({ body: welcomeMessage }, event.threadID);
             }
