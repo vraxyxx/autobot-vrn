@@ -1,43 +1,48 @@
 const axios = require("axios");
-const { sendMessage } = require("../handles/sendMessage");
 
-module.exports = {
-  name: "ccgen",
-  description: "Generate fake credit card details for testing (ID, US, etc.)",
-  author: "Vern",
-  usage: "ccgen <type> <quantity>",
-  cooldown: 5,
+module.exports.config = {
+  name: "ccgen",
+  version: "1.0.0",
+  role: 0,
+  credits: "vern",
+  description: "Generate fake credit card details for testing (ID, US, etc.)",
+  usage: "/ccgen <type> <quantity>",
+  prefix: true,
+  cooldowns: 5,
+  commandCategory: "Tool"
+};
 
-  async execute(senderId, args, pageAccessToken) {
-    try {
-      const [type = "id", quantity = "5"] = args;
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID } = event;
+  const prefix = "/"; // Change if your bot uses a dynamic prefix
 
-      await sendMessage(senderId, {
-        text: `💳 Generating ${quantity} ${type.toUpperCase()} CCs, please wait...`
-      }, pageAccessToken);
+  const type = args[0] || "id";
+  const quantity = args[1] || "5";
 
-      const apiUrl = `https://haji-mix.up.railway.app/api/ccgen?types=${type}&quantity=${quantity}&api_key=48eb5b9082471e96afe7b11ea62e6c32bd595fbad9ca43092d900ae8fe547da8`;
+  try {
+    // Loading message
+    const waitMsg = `════『 𝗖𝗖𝗚𝗘𝗡 』════\n\n💳 Generating ${quantity} ${type.toUpperCase()} credit cards...\nPlease wait...`;
+    await api.sendMessage(waitMsg, threadID, messageID);
 
-      const response = await axios.get(apiUrl);
+    const apiUrl = `https://haji-mix.up.railway.app/api/ccgen?types=${type}&quantity=${quantity}&api_key=48eb5b9082471e96afe7b11ea62e6c32bd595fbad9ca43092d900ae8fe547da8`;
+    const response = await axios.get(apiUrl);
 
-      if (!response.data || !response.data.result || response.data.result.length === 0) {
-        return sendMessage(senderId, {
-          text: "❌ No CC generated. Try different parameters."
-        }, pageAccessToken);
-      }
+    if (!response.data?.result?.length) {
+      return api.sendMessage(`❌ No CCs generated. Try different parameters.`, threadID, messageID);
+    }
 
-      const cards = response.data.result.join('\n');
-      const message = `💳 𝗙𝗔𝗞𝗘 𝗖𝗖 𝗚𝗘𝗡𝗘𝗥𝗔𝗧𝗘𝗗:\n\n${cards}`;
+    const cards = response.data.result.join('\n');
+    const resultMsg = `════『 𝗙𝗔𝗞𝗘 𝗖𝗖𝗚𝗘𝗡 』════\n\n${cards}\n\n> For testing purposes only.`;
 
-      await sendMessage(senderId, {
-        text: message
-      }, pageAccessToken);
+    await api.sendMessage(resultMsg, threadID, messageID);
 
-    } catch (error) {
-      console.error("❌ Error in ccgen command:", error.message);
-      await sendMessage(senderId, {
-        text: `❌ Failed to generate CC. Error: ${error.message || "Unknown error"}`
-      }, pageAccessToken);
-    }
-  }
+  } catch (error) {
+    console.error("❌ Error in ccgen command:", error.message || error);
+
+    const errorMsg = `════『 𝗖𝗖𝗚𝗘𝗡 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to generate CCs.\nReason: ${error.message || "Unknown error"}\n\n` +
+      `> Try again later.`;
+
+    return api.sendMessage(errorMsg, threadID, messageID);
+  }
 };
