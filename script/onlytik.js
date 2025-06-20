@@ -1,44 +1,47 @@
 const axios = require("axios");
-const { sendMessage } = require("../handles/sendMessage");
 
-module.exports = {
-  name: "onlytik",
-  description: "Fetch a random TikTok video using Haji-Mix API",
-  author: "Vern",
-  usage: "onlytik",
-  cooldown: 5,
+module.exports.config = {
+  name: "onlytik",
+  version: "1.0.0",
+  role: 0,
+  credits: "vern",
+  description: "Fetch a random TikTok video using Haji-Mix API",
+  usage: "/onlytik",
+  prefix: true,
+  cooldowns: 5,
+  commandCategory: "Video"
+};
 
-  async execute(senderId, args, pageAccessToken) {
-    try {
-      await sendMessage(senderId, {
-        text: "📽️ 𝗙𝗲𝘁𝗰𝗵𝗶𝗻𝗴 𝗮 𝗧𝗶𝗸𝗧𝗼𝗸 𝘃𝗶𝗱𝗲𝗼, 𝗽𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁..."
-      }, pageAccessToken);
+module.exports.run = async function ({ api, event }) {
+  const { threadID, messageID } = event;
 
-      const apiUrl = `https://haji-mix.up.railway.app/api/onlytik?stream=true&api_key=48eb5b9082471e96afe7b11ea62e6c32bd595fbad9ca43092d900ae8fe547da8`;
-      const response = await axios.get(apiUrl);
+  try {
+    // Inform the user that the video is loading
+    const waitMsg = `════『 𝗢𝗡𝗟𝗬𝗧𝗜𝗞 』════\n\n📽️ Fetching a TikTok video...\nPlease wait...`;
+    await api.sendMessage(waitMsg, threadID, messageID);
 
-      const videoUrl = response?.data?.url;
+    // Request the TikTok video
+    const apiUrl = `https://haji-mix.up.railway.app/api/onlytik?stream=true&api_key=48eb5b9082471e96afe7b11ea62e6c32bd595fbad9ca43092d900ae8fe547da8`;
+    const response = await axios.get(apiUrl);
 
-      if (!videoUrl) {
-        return sendMessage(senderId, {
-          text: "❌ No video found. Please try again."
-        }, pageAccessToken);
-      }
+    const videoUrl = response?.data?.url;
 
-      await sendMessage(senderId, {
-        attachment: {
-          type: "video",
-          payload: {
-            url: videoUrl
-          }
-        }
-      }, pageAccessToken);
+    if (!videoUrl) {
+      return api.sendMessage(`❌ No video found. Please try again.`, threadID, messageID);
+    }
 
-    } catch (error) {
-      console.error("❌ Error fetching TikTok video:", error.message);
-      await sendMessage(senderId, {
-        text: `❌ Failed to get TikTok video.\nReason: ${error.message || "Unknown error"}`
-      }, pageAccessToken);
-    }
-  }
+    // Send video as attachment
+    await api.sendMessage({
+      attachment: await global.utils.getStreamFromURL(videoUrl)
+    }, threadID, messageID);
+
+  } catch (error) {
+    console.error("❌ Error in onlytik command:", error.message || error);
+
+    const errorMsg = `════『 𝗢𝗡𝗟𝗬𝗧𝗜𝗞 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to fetch TikTok video.\nReason: ${error.message || "Unknown error"}\n\n` +
+      `> Please try again later.`;
+
+    return api.sendMessage(errorMsg, threadID, messageID);
+  }
 };
