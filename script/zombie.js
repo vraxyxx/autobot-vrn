@@ -1,51 +1,52 @@
 const axios = require("axios");
+const { sendMessage } = require("../handles/sendMessage");
 
-module.exports.config = {
+module.exports = {
   name: "zombie",
-  version: "1.0.0",
-  author: "vern",
-  description: "Generate a zombie-style image from a given image URL.",
-  prefix: true,
-  cooldowns: 5,
-  commandCategory: "image",
-  dependencies: {
-    axios: ""
-  }
-};
+  description: "Applies zombie face filter to an image",
+  author: "Vern",
+  usage: "reply to an image with: zombie",
+  cooldown: 5,
 
-module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID } = event;
-  const imageUrl = args[0];
+  async execute(senderId, args, pageAccessToken, imageUrl, event) {
+    // If image URL is not directly passed, try to get it from the reply
+    if (!imageUrl && event?.message?.reply_to?.attachments?.[0]?.payload?.url) {
+      imageUrl = event.message.reply_to.attachments[0].payload.url;
+    }
 
-  if (!imageUrl) {
-    return api.sendMessage(
-      "🧟 Please provide an image URL.\n\nUsage: /zombie [image_url]\nExample: /zombie https://files.catbox.moe/91e6rp.jpg",
-      threadID,
-      messageID
-    );
-  }
+    if (!imageUrl) {
+      return sendMessage(senderId, {
+        text: "🧟 Please reply to an image to apply the zombie filter."
+      }, pageAccessToken);
+    }
 
-  try {
-    // Send loading message
-    await api.sendMessage("🧟‍♂️ Generating zombie image, please wait...", threadID, messageID);
+    try {
+      await sendMessage(senderId, {
+        text: "🧟 Applying zombie filter, please wait..."
+      }, pageAccessToken);
 
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/zombie?url=${encodeURIComponent(imageUrl)}&apikey=4fe7e522-70b7-420b-a746-d7a23db49ee5`;
+      const apiUrl = `https://kaiz-apis.gleeze.com/api/zombie?url=${encodeURIComponent(imageUrl)}&apikey=4fe7e522-70b7-420b-a746-d7a23db49ee5`;
+      const response = await axios.get(apiUrl);
 
-    // Get the zombie image as a stream
-    const response = await axios.get(apiUrl, { responseType: "stream" });
+      const zombieImage = response?.data?.result;
+      if (!zombieImage) {
+        throw new Error("No result from API.");
+      }
 
-    // Send the image back as an attachment
-    return api.sendMessage({
-      body: "🧟 Here is your zombie image!",
-      attachment: response.data
-    }, threadID, messageID);
+      return sendMessage(senderId, {
+        attachment: {
+          type: "image",
+          payload: {
+            url: zombieImage
+          }
+        }
+      }, pageAccessToken);
 
-  } catch (error) {
-    console.error("❌ Error in zombie command:", error.message || error);
-    return api.sendMessage(
-      `❌ Failed to generate zombie image.\nError: ${error.response?.data?.message || error.message || "Unknown error"}`,
-      threadID,
-      messageID
-    );
+    } catch (err) {
+      console.error("❌ Error applying zombie filter:", err.message);
+      return sendMessage(senderId, {
+        text: `❌ Failed to apply zombie filter.\nReason: ${err.message || "Unknown error"}`
+      }, pageAccessToken);
+    }
   }
 };
