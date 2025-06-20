@@ -1,66 +1,61 @@
 const axios = require("axios");
-const fs = require("fs-extra");
-const path = require("path");
+const { sendMessage } = require("../handles/sendMessage");
 
 module.exports = {
-  config: {
-    name: "soundcloud",
-    version: "1.0.0",
-    author: "vernex",
-    description: "Download music from SoundCloud by title.",
-    cooldowns: 5,
-    dependencies: {
-      axios: "",
-      "fs-extra": ""
-    }
-  },
+  name: "soundcloud",
+  description: "Download music from SoundCloud by title",
+  author: "Vern",
+  usage: "soundcloud <song title>",
+  cooldown: 5,
 
-  run: async function ({ api, event, args }) {
-    const { threadID, messageID } = event;
+  async execute(senderId, args, pageAccessToken) {
+    if (!args || args.length === 0) {
+      return sendMessage(senderId, {
+        text: "🎧 Please enter the SoundCloud song title.\n\nExample: soundcloud long live"
+      }, pageAccessToken);
+    }
+
     const query = args.join(" ");
-
-    if (!query) {
-      return api.sendMessage("❌ Please provide a SoundCloud song title.\n\nUsage: /soundcloud <title>", threadID, messageID);
-    }
+    const apiUrl = `https://haji-mix.up.railway.app/api/soundcloud?title=${encodeURIComponent(query)}&api_key=48eb5b9082471e96afe7b11ea62e6c32bd595fbad9ca43092d900ae8fe547da8`;
 
     try {
-      await api.sendMessage(`⏳ Searching SoundCloud for: "${query}"...`, threadID, messageID);
+      // Fetch song data
+      const response = await axios.get(apiUrl);
+      const result = response.data.result;
 
-      const response = await axios.get(`https://haji-mix.up.railway.app/api/soundcloud?title=${encodeURIComponent(query)}`);
-      const data = response.data;
-
-      if (!data.status || !data.result || !data.result.audio) {
-        return api.sendMessage("❌ Failed to fetch SoundCloud audio. Try another title.", threadID, messageID);
+      if (!result || !result.audio || !result.title) {
+        return sendMessage(senderId, {
+          text: `❌ No results found for "${query}".`
+        }, pageAccessToken);
       }
 
-      const audioUrl = data.result.audio;
-      const title = data.result.title || "Unknown Title";
+      // Send song details
+      const message = `🎶 𝗧𝗶𝘁𝗹𝗲: ${result.title}\n👤 𝗔𝗿𝘁𝗶𝘀𝘁: ${result.artist}\n⏱️ 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: ${result.duration || "N/A"}`;
+      await sendMessage(senderId, { text: message }, pageAccessToken);
 
-      // Download the audio file
-      const tempPath = path.join(__dirname, `../temp/soundcloud_${Date.now()}.mp3`);
-      const audioStream = (await axios.get(audioUrl, { responseType: "stream" })).data;
+      // Send thumbnail if available
+      if (result.thumbnail) {
+        await sendMessage(senderId, {
+          attachment: {
+            type: "image",
+            payload: { url: result.thumbnail }
+          }
+        }, pageAccessToken);
+      }
 
-      const writer = fs.createWriteStream(tempPath);
-      audioStream.pipe(writer);
+      // Send audio
+      await sendMessage(senderId, {
+        attachment: {
+          type: "audio",
+          payload: { url: result.audio }
+        }
+      }, pageAccessToken);
 
-      await new Promise((resolve, reject) => {
-        writer.on("finish", resolve);
-        writer.on("error", reject);
-      });
-
-      // Send the audio file
-      await api.sendMessage(
-        {
-          body: `🎧 Title: ${title}\n\n✅ Here's your SoundCloud audio:`,
-          attachment: fs.createReadStream(tempPath)
-        },
-        threadID,
-        () => fs.unlinkSync(tempPath) // Cleanup
-      );
-
-    } catch (err) {
-      console.error("❌ Error in /soundcloud:", err.message);
-      return api.sendMessage(`❌ Error: ${err.message}`, threadID, messageID);
+    } catch (error) {
+      console.error("❌ Error in soundcloud command:", error.message || error);
+      return sendMessage(senderId, {
+        text: `❌ Failed to fetch SoundCloud song.\nReason: ${error.message || "Unknown error"}`
+      }, pageAccessToken);
     }
   }
 };
