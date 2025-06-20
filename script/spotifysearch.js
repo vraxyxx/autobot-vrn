@@ -1,12 +1,12 @@
-const axios = require('axios');
+const axios = require("axios");
 
 module.exports.config = {
   name: "spotifysearch",
   version: "1.0.0",
   role: 0,
   credits: "vern",
-  description: "Search for Spotify tracks using the Kaiz API.",
-  usage: "/spotifysearch <search query>",
+  description: "Search for songs on Spotify",
+  usage: "/spotifysearch <song name>",
   prefix: true,
   cooldowns: 3,
   commandCategory: "Music"
@@ -14,63 +14,51 @@ module.exports.config = {
 
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID } = event;
-  const query = args.join(' ').trim();
-  const prefix = "/"; // Change if your bot uses a dynamic prefix
+  const prefix = "/"; // Use dynamic prefix if your bot supports it
+  const query = args.join(" ").trim();
 
-  // No search query provided
   if (!query) {
-    const usageMessage = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 𝗦𝗘𝗔𝗥𝗖𝗛 』════\n\n` +
-      `⚠️ Please provide a search term for Spotify tracks.\n\n` +
-      `📌 Usage: ${prefix}spotifysearch <search query>\n` +
-      `💬 Example: ${prefix}spotifysearch about you\n\n` +
-      `> Thank you for using Spotify Search!`;
-
-    return api.sendMessage(usageMessage, threadID, messageID);
+    const usageMsg = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 𝗦𝗘𝗔𝗥𝗖𝗛 』════\n\n` +
+      `🎵 Please enter a song name to search.\n\n` +
+      `📌 Usage: ${prefix}spotifysearch <song name>\n` +
+      `💬 Example: ${prefix}spotifysearch multo`;
+    return api.sendMessage(usageMsg, threadID, messageID);
   }
 
   try {
-    // Send loading message first
-    const waitMsg = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 𝗦𝗘𝗔𝗥𝗖𝗛 』════\n\n` +
-      `🔎 Searching Spotify for: "${query}"\nPlease wait a moment...`;
-    await api.sendMessage(waitMsg, threadID, messageID);
+    const loadingMsg = `🎧 Searching Spotify for: "${query}"...\nPlease wait...`;
+    await api.sendMessage(loadingMsg, threadID, messageID);
 
-    // Call the Spotify Search API
-    const apiUrl = "https://kaiz-apis.gleeze.com/api/spotify-search";
-    const response = await axios.get(apiUrl, {
-      params: {
-        q: query,
-        apikey: "4fe7e522-70b7-420b-a746-d7a23db49ee5"
-      }
-    });
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/spotify-search?q=${encodeURIComponent(query)}&apikey=4fe7e522-70b7-420b-a746-d7a23db49ee5`;
+    const { data } = await axios.get(apiUrl);
 
-    const data = response.data?.result || response.data?.tracks || response.data;
-    let resultMsg = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 𝗦𝗘𝗔𝗥𝗖𝗛 』════\n\n`;
-
-    if (Array.isArray(data) && data.length > 0) {
-      data.slice(0, 5).forEach((track, idx) => {
-        resultMsg += `#${idx + 1}\n`;
-        if (track.title) resultMsg += `• Title: ${track.title}\n`;
-        if (track.artist) resultMsg += `• Artist: ${track.artist}\n`;
-        if (track.album) resultMsg += `• Album: ${track.album}\n`;
-        if (track.url) resultMsg += `• URL: ${track.url}\n`;
-        if (track.release_date) resultMsg += `• Release Date: ${track.release_date}\n`;
-        resultMsg += `\n`;
-      });
-    } else {
-      resultMsg += "⚠️ No results found.";
+    if (!data?.result?.length) {
+      return api.sendMessage("❌ No results found for your search.", threadID, messageID);
     }
 
-    resultMsg += `> Powered by Kaiz Spotify Search API`;
+    const song = data.result[0];
 
-    return api.sendMessage(resultMsg, threadID, messageID);
+    const songInfo = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 𝗥𝗘𝗦𝗨𝗟𝗧 』════\n\n` +
+      `🎵 Title: ${song.title}\n` +
+      `🎤 Artist: ${song.artists}\n` +
+      `📀 Album: ${song.album}\n` +
+      `🔗 URL: ${song.url}\n\n` +
+      `> Provided by Vern-Autobot`;
+
+    await api.sendMessage(songInfo, threadID, messageID);
+
+    if (song.thumbnail) {
+      await api.sendMessage({
+        attachment: await global.utils.getStreamFromURL(song.thumbnail)
+      }, threadID, messageID);
+    }
 
   } catch (error) {
-    console.error('❌ Error in spotifysearch command:', error.message || error);
+    console.error("❌ Spotify Search Error:", error.message || error);
 
-    const errorMessage = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 𝗦𝗘𝗔𝗥𝗖𝗛 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
-      `🚫 Failed to search Spotify.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
+    const errorMsg = `════『 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to fetch search results.\nReason: ${error.message || "Unknown error"}\n\n` +
       `> Please try again later.`;
-
-    return api.sendMessage(errorMessage, threadID, messageID);
+    return api.sendMessage(errorMsg, threadID, messageID);
   }
 };
