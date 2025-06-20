@@ -1,42 +1,44 @@
 const axios = require("axios");
-const { sendMessage } = require("../handles/sendMessage");
 
-module.exports = {
-  name: "aibooru",
-  description: "Fetch random Aibooru AI art image (NSFW/SFW based on config)",
-  author: "Vern",
-  usage: "aibooru",
-  cooldown: 5,
+module.exports.config = {
+  name: "aibooru",
+  version: "1.0.0",
+  role: 0,
+  credits: "vern",
+  description: "Fetch a random Aibooru AI art image (NSFW/SFW based on config)",
+  usage: "/aibooru",
+  prefix: true,
+  cooldowns: 5,
+  commandCategory: "Image"
+};
 
-  async execute(senderId, args, pageAccessToken) {
-    try {
-      await sendMessage(senderId, {
-        text: "🖼️ 𝗙𝗲𝘁𝗰𝗵𝗶𝗻𝗴 𝗿𝗮𝗻𝗱𝗼𝗺 𝗔𝗜𝗯𝗼𝗼𝗿𝘂 𝗶𝗺𝗮𝗴𝗲, 𝗽𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁..."
-      }, pageAccessToken);
+module.exports.run = async function ({ api, event }) {
+  const { threadID, messageID } = event;
 
-      const apiUrl = `https://haji-mix.up.railway.app/api/aibooru?stream=true&api_key=48eb5b9082471e96afe7b11ea62e6c32bd595fbad9ca43092d900ae8fe547da8`;
+  try {
+    // Loading message
+    const waitMsg = `════『 𝗔𝗜𝗕𝗢𝗢𝗥𝗨 』════\n\n🖼️ Fetching a random Aibooru AI art image...\nPlease wait...`;
+    await api.sendMessage(waitMsg, threadID, messageID);
 
-      const response = await axios.get(apiUrl);
-      const imageUrl = response?.data?.url;
+    const apiUrl = `https://haji-mix.up.railway.app/api/aibooru?stream=true&api_key=48eb5b9082471e96afe7b11ea62e6c32bd595fbad9ca43092d900ae8fe547da8`;
+    const response = await axios.get(apiUrl);
+    const imageUrl = response?.data?.url;
 
-      if (!imageUrl) {
-        return sendMessage(senderId, {
-          text: "❌ No image found. Please try again later."
-        }, pageAccessToken);
-      }
+    if (!imageUrl) {
+      return api.sendMessage(`❌ No image found. Please try again later.`, threadID, messageID);
+    }
 
-      await sendMessage(senderId, {
-        attachment: {
-          type: "image",
-          payload: { url: imageUrl }
-        }
-      }, pageAccessToken);
+    await api.sendMessage({
+      attachment: await global.utils.getStreamFromURL(imageUrl)
+    }, threadID, messageID);
 
-    } catch (error) {
-      console.error("❌ Error in Aibooru command:", error.message);
-      await sendMessage(senderId, {
-        text: `❌ Failed to retrieve image. Error: ${error.message || "Unknown error"}`
-      }, pageAccessToken);
-    }
-  }
+  } catch (error) {
+    console.error("❌ Error in aibooru command:", error.message || error);
+
+    const errorMsg = `════『 𝗔𝗜𝗕𝗢𝗢𝗥𝗨 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to fetch Aibooru image.\nReason: ${error.message || "Unknown error"}\n\n` +
+      `> Please try again later.`;
+
+    return api.sendMessage(errorMsg, threadID, messageID);
+  }
 };
