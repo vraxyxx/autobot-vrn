@@ -1,52 +1,52 @@
 const axios = require("axios");
-const { sendMessage } = require("../handles/sendMessage");
 
-module.exports = {
-  name: "zombie",
-  description: "Applies zombie face filter to an image",
-  author: "Vern",
-  usage: "reply to an image with: zombie",
-  cooldown: 5,
+module.exports.config = {
+  name: "zombie",
+  version: "1.0.0",
+  role: 0,
+  credits: "vern",
+  description: "Applies a zombie face filter to an image",
+  usage: "Reply to an image with: /zombie",
+  prefix: true,
+  cooldowns: 5,
+  commandCategory: "Image"
+};
 
-  async execute(senderId, args, pageAccessToken, imageUrl, event) {
-    // If image URL is not directly passed, try to get it from the reply
-    if (!imageUrl && event?.message?.reply_to?.attachments?.[0]?.payload?.url) {
-      imageUrl = event.message.reply_to.attachments[0].payload.url;
-    }
+module.exports.run = async function ({ api, event }) {
+  const { threadID, messageID } = event;
 
-    if (!imageUrl) {
-      return sendMessage(senderId, {
-        text: "🧟 Please reply to an image to apply the zombie filter."
-      }, pageAccessToken);
-    }
+  let imageUrl = null;
 
-    try {
-      await sendMessage(senderId, {
-        text: "🧟 Applying zombie filter, please wait..."
-      }, pageAccessToken);
+  // Try to get image URL from the replied message
+  if (event?.messageReply?.attachments?.[0]?.type === "photo") {
+    imageUrl = event.messageReply.attachments[0].url;
+  }
 
-      const apiUrl = `https://kaiz-apis.gleeze.com/api/zombie?url=${encodeURIComponent(imageUrl)}&apikey=4fe7e522-70b7-420b-a746-d7a23db49ee5`;
-      const response = await axios.get(apiUrl);
+  if (!imageUrl) {
+    const noImageMsg = `🧟 Please reply to an image to apply the zombie filter.`;
+    return api.sendMessage(noImageMsg, threadID, messageID);
+  }
 
-      const zombieImage = response?.data?.result;
-      if (!zombieImage) {
-        throw new Error("No result from API.");
-      }
+  try {
+    const waitMsg = `════『 𝗭𝗢𝗠𝗕𝗜𝗘 𝗙𝗜𝗟𝗧𝗘𝗥 』════\n\n🧟 Applying zombie effect...\nPlease wait...`;
+    await api.sendMessage(waitMsg, threadID, messageID);
 
-      return sendMessage(senderId, {
-        attachment: {
-          type: "image",
-          payload: {
-            url: zombieImage
-          }
-        }
-      }, pageAccessToken);
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/zombie?url=${encodeURIComponent(imageUrl)}&apikey=4fe7e522-70b7-420b-a746-d7a23db49ee5`;
+    const response = await axios.get(apiUrl);
 
-    } catch (err) {
-      console.error("❌ Error applying zombie filter:", err.message);
-      return sendMessage(senderId, {
-        text: `❌ Failed to apply zombie filter.\nReason: ${err.message || "Unknown error"}`
-      }, pageAccessToken);
-    }
-  }
+    const zombieImage = response?.data?.result;
+    if (!zombieImage) throw new Error("No result returned from API.");
+
+    return api.sendMessage({
+      attachment: await global.utils.getStreamFromURL(zombieImage)
+    }, threadID, messageID);
+
+  } catch (err) {
+    console.error("❌ Error in zombie command:", err.message || err);
+
+    const errorMsg = `════『 𝗭𝗢𝗠𝗕𝗜𝗘 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to apply zombie filter.\nReason: ${err.message || "Unknown error"}\n\n` +
+      `> Try again with a clear face image.`;
+    return api.sendMessage(errorMsg, threadID, messageID);
+  }
 };
