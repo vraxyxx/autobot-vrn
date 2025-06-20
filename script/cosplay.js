@@ -1,45 +1,39 @@
 const axios = require("axios");
 
-module.exports = {
-  config: {
-    name: "cosplay",
-    version: "1.0.0",
-    author: "vernex",
-    description: "Send a stream of random cosplay images.",
-    cooldowns: 5,
-    dependencies: {
-      axios: ""
+module.exports.config = {
+  name: "cosplay",
+  version: "1.0.0",
+  role: 0,
+  credits: "vern",
+  description: "Send a random cosplay girl photo",
+  usage: "/cosplay",
+  prefix: true,
+  cooldowns: 5,
+  commandCategory: "Image"
+};
+
+module.exports.run = async function ({ api, event }) {
+  const { threadID, messageID } = event;
+
+  try {
+    const apiUrl = "https://haji-mix.up.railway.app/api/cosplayv2?api_key=48eb5b9082471e96afe7b11ea62e6c32bd595fbad9ca43092d900ae8fe547da8";
+    const res = await axios.get(apiUrl);
+    const imageUrl = res.data?.url || res.data?.result;
+
+    if (!imageUrl) {
+      return api.sendMessage("❌ Failed to fetch cosplay image. Please try again later.", threadID, messageID);
     }
-  },
 
-  run: async function ({ api, event }) {
-    const { threadID, messageID } = event;
+    return api.sendMessage({
+      attachment: await global.utils.getStreamFromURL(imageUrl)
+    }, threadID);
 
-    try {
-      // Inform the user that loading has started
-      await api.sendMessage("⏳ Fetching cosplay images for you...", threadID, messageID);
-
-      // Request 10 cosplay image URLs
-      const res = await axios.get(`https://haji-mix.up.railway.app/api/cosplay?limit=10&page=1&stream=true`);
-      const { result } = res.data;
-
-      if (!result || result.length === 0) {
-        return api.sendMessage("❌ No cosplay images found.", threadID, messageID);
-      }
-
-      // Send the images one by one
-      for (const url of result) {
-        await api.sendMessage(
-          {
-            body: "✨ Cosplay Image:",
-            attachment: await global.utils.getStream(url)
-          },
-          threadID
-        );
-      }
-    } catch (error) {
-      console.error("❌ Error fetching cosplay images:", error.message);
-      return api.sendMessage(`❌ Failed to fetch cosplay images.\nError: ${error.message}`, threadID, messageID);
-    }
+  } catch (error) {
+    console.error("❌ Error in cosplay command:", error.message);
+    return api.sendMessage(
+      `❌ Error fetching cosplay image: ${error.message || "Unknown error"}`,
+      threadID,
+      messageID
+    );
   }
 };
