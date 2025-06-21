@@ -1,46 +1,61 @@
 const axios = require('axios');
+const fs = require('fs-extra');
 
 module.exports.config = {
-  name: "imgbb",
-  version: "1.0",
-  credits: "vern", // DO NOT CHANGE
-  description: "Upload an image to ImgBB and get the link.",
-  usage: "Reply to an image and type: imgbb",
-  cooldown: 5,
-  permissions: [0],
-  commandCategory: "tools",
+  name: 'imgbb',
+  version: '1.0.0',
+  role: 0,
+  aliases: ['uploadimg'],
+  description: 'Upload an image to IMGBB and get the link',
+  usage: '<reply to an image>',
+  credits: 'Vern',
+  cooldown: 3,
 };
 
-module.exports.run = async function ({ api, event }) {
-  const { messageReply, threadID, messageID } = event;
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID, messageReply } = event;
+  const imageUrl = messageReply?.attachments?.[0]?.url;
 
-  // Validate: must be a reply with attachment
-  if (!messageReply || !messageReply.attachments || messageReply.attachments.length === 0) {
-    return api.sendMessage("📸 Please reply to an image to upload it to ImgBB.", threadID, messageID);
+  if (!imageUrl) {
+    api.sendMessage(
+      '❌ Please reply to an image to upload it to IMGBB!',
+      threadID,
+      messageID
+    );
+    return;
   }
 
-  const attachment = messageReply.attachments[0];
+  const apiUrl = `https://kaiz-apis.gleeze.com/api/imgbb?url=${encodeURIComponent(imageUrl)}&apikey=APIKEY`;
 
-  if (attachment.type !== "photo") {
-    return api.sendMessage("❌ Only image uploads are supported at the moment.", threadID, messageID);
-  }
+  api.sendMessage(
+    '🌐 Uploading the image to IMGBB, please wait...',
+    threadID,
+    async (err, info) => {
+      if (err) return;
 
-  const imageUrl = attachment.url;
-  const apiKey = "YOUR_APIKEY"; // 🔐 Replace this with your actual API key
+      try {
+        const response = await axios.get(apiUrl);
+        const { link } = response.data;
 
-  api.sendMessage("⏳ Uploading image to ImgBB, please wait...", threadID, messageID);
-
-  try {
-    const res = await axios.get(`https://kaiz-apis.gleeze.com/api/imgbb?url=${encodeURIComponent(imageUrl)}&apikey=${apiKey}`);
-    const imgbbLink = res?.data?.link;
-
-    if (!imgbbLink) {
-      throw new Error("No link returned from API");
+        if (link) {
+          api.sendMessage(
+            `✅ Image uploaded successfully!\n🌐 Link: ${link}`,
+            threadID,
+            messageID
+          );
+        } else {
+          api.editMessage(
+            '❌ Failed to upload the image. Please try again.',
+            info.messageID
+          );
+        }
+      } catch (error) {
+        console.error('Error during image upload:', error);
+        api.editMessage(
+          '❌ An error occurred while processing your request. Please try again later.',
+          info.messageID
+        );
+      }
     }
-
-    return api.sendMessage(`✅ Image uploaded successfully:\n\n${imgbbLink}`, threadID, messageID);
-  } catch (err) {
-    console.error("ImgBB Error:", err.response?.data || err.message);
-    return api.sendMessage("❌ Failed to upload image to ImgBB. Try again later.", threadID, messageID);
-  }
+  );
 };
