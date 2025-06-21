@@ -3,10 +3,10 @@ const fs = require('fs');
 
 module.exports.config = {
     name: "welcomenoti",
-    version: "1.3.0",
+    version: "1.4.0",
     credits: "Vern",
-    description: "Sends a decorated welcome message with an image when a new member joins.",
-    usages: "No command usage, triggered automatically.",
+    description: "Sends a stylish welcome message with an image and info when someone joins.",
+    usages: "Triggered automatically when someone joins.",
     cooldown: 5,
 };
 
@@ -58,16 +58,20 @@ module.exports.handleEvent = async function ({ api, event }) {
                 fs.writeFileSync(filePath, Buffer.from(data));
 
                 const welcomeMessage = `
-━━━━━━━━━━━━━━━━━━━━━━
-👋 Welcome ${prefix} ${name}!
-🎉 You are member #${memberCount} in "${groupName}"
-🏡 Group Owner: ${ownerName}
-🕓 Joined: ${joinDate}
-🔧 Admins: ${adminsString}
-🔋 Bot Uptime: ${uptime}
-━━━━━━━━━━━━━━━━━━━━━━
-✨ Enjoy your stay and have fun, add me @vern!
-━━━━━━━━━━━━━━━━━━━━━━`;
+╔══════════════════════════════════╗
+║ 👋 𝙒𝙚𝙡𝙘𝙤𝙢𝙚 𝙩𝙤 ${groupName}!
+║ ━━━━━━━━━━━━━━━━━━━━━━━━
+║ 💠 𝗡𝗮𝗺𝗲: ${prefix} ${name}
+║ 💠 𝗠𝗲𝗺𝗯𝗲𝗿 #: ${memberCount}
+║ 💠 𝗝𝗼𝗶𝗻𝗲𝗱 𝗔𝘁: ${joinDate}
+║ 💠 𝗢𝘄𝗻𝗲𝗿: ${ownerName}
+║ 💠 𝗔𝗱𝗺𝗶𝗻𝘀: ${adminsString}
+║ 💠 𝗕𝗼𝘁 𝗨𝗽𝘁𝗶𝗺𝗲: ${uptime}
+║ ━━━━━━━━━━━━━━━━━━━━━━━━
+║ 🌟 𝗘𝗻𝗷𝗼𝘆 𝘆𝗼𝘂𝗿 𝘀𝘁𝗮𝘆!
+║ ❤️ 𝗧𝗵𝗶𝘀 𝗯𝗼𝘁 𝗶𝘀 𝗺𝗮𝗱𝗲 𝗯𝘆 𝗩𝗲𝗿𝗻
+║ 🛠️ 𝗖𝗿𝗲𝗮𝘁𝗶𝗻𝗴 𝗮𝘄𝗲𝘀𝗼𝗺𝗲 𝗲𝘅𝗽𝗲𝗿𝗶𝗲𝗻𝗰𝗲𝘀 𝗳𝗼𝗿 𝘆𝗼𝘂!
+╚══════════════════════════════════╝`;
 
                 await api.sendMessage({
                     body: welcomeMessage,
@@ -76,7 +80,12 @@ module.exports.handleEvent = async function ({ api, event }) {
 
             } catch (imageError) {
                 console.error("Error fetching welcome image:", imageError);
-                const fallbackMessage = `👋 Welcome ${prefix} ${name} to "${groupName}"!\nYou're member #${memberCount}. Enjoy your stay!`;
+                const fallbackMessage = `
+╔══════════════════════╗
+║ 👋 Welcome ${prefix} ${name}!
+║ 🎉 You're member #${memberCount} in ${groupName}
+║ ❤️ All of these made by Vern —bot-site-creator!
+╚══════════════════════╝`;
                 await api.sendMessage({ body: fallbackMessage }, event.threadID);
             }
 
