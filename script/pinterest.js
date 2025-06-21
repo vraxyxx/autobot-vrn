@@ -3,67 +3,50 @@ const axios = require('axios');
 module.exports.config = {
   name: "pinterest",
   version: "1.0.0",
-  role: 0,
-  credits: "vraxyxx",
-  description: "Search Pinterest images using the Ferdev API.",
-  usage: "/pinterest <search term>",
-  prefix: true,
-  cooldowns: 3,
-  commandCategory: "Search"
+  credits: "Vern",
+  description: "Searches and streams images from Pinterest",
+  hasPrefix: false,
+  cooldown: 5,
+  aliases: ["pin"],
 };
 
 module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID } = event;
-  const query = args.join(' ').trim();
-  const prefix = "/"; // Adjust if your bot uses a different prefix
-
-  // No query provided
-  if (!query) {
-    const usageMessage = `════『 𝗣𝗜𝗡𝗧𝗘𝗥𝗘𝗦𝗧 』════\n\n` +
-      `⚠️ Please provide a search term for Pinterest.\n\n` +
-      `📌 Usage: ${prefix}pinterest <search term>\n` +
-      `💬 Example: ${prefix}pinterest cat\n\n` +
-      `> Thank you for using Pinterest Search!`;
-
-    return api.sendMessage(usageMessage, threadID, messageID);
-  }
-
   try {
-    // Send loading message first
-    const waitMsg = `════『 𝗣𝗜𝗡𝗧𝗘𝗥𝗘𝗦𝗧 』════\n\n` +
-      `🔎 Searching Pinterest for: "${query}"\nPlease wait a moment...`;
-    await api.sendMessage(waitMsg, threadID, messageID);
-
-    // Call the Pinterest Search API
-    const apiUrl = "https://api.ferdev.my.id/search/pinterest";
-    const response = await axios.get(apiUrl, {
-      params: {
-        query: query
-      }
-    });
-
-    const results = response.data?.result || [];
-    if (!Array.isArray(results) || results.length === 0) {
-      return api.sendMessage("❌ No results found for your search.", threadID, messageID);
+    let input = args.join(" ");
+    if (!input.includes(" - ")) {
+      return api.sendMessage("Usage: pinterest <keyword> - <limit>\nExample: pinterest cat - 5", event.threadID, event.messageID);
     }
 
-    // Send up to 5 image links (or adjust as desired)
-    let resultMsg = `════『 𝗣𝗜𝗡𝗧𝗘𝗥𝗘𝗦𝗧 』════\n\n`;
-    resultMsg += `🔎 Results for: ${query}\n\n`;
-    results.slice(0, 5).forEach((img, idx) => {
-      resultMsg += `${idx + 1}. ${img}\n`;
+    const [keyword, limit] = input.split(" - ");
+    const count = parseInt(limit.trim());
+
+    if (!keyword || isNaN(count) || count < 1 || count > 30) {
+      return api.sendMessage("❌ Please provide a valid keyword and a number between 1–30.\nExample: pinterest anime - 10", event.threadID, event.messageID);
+    }
+
+    api.sendMessage(`🔍 Searching "${keyword.trim()}" (${count} images)...`, event.threadID, async () => {
+      try {
+        const apiUrl = `https://ccprojectsapis.zetsu.xyz/api/pin?title=${encodeURIComponent(keyword.trim())}&count=${count}`;
+        const response = await axios.get(apiUrl);
+        const images = response.data.data;
+
+        if (!images || images.length === 0) {
+          return api.sendMessage(`No results found for "${keyword.trim()}".`, event.threadID, event.messageID);
+        }
+
+        for (const url of images.slice(0, count)) {
+          const imgStream = await axios.get(url, { responseType: 'stream' });
+          await api.sendMessage({
+            attachment: imgStream.data
+          }, event.threadID);
+        }
+
+      } catch (error) {
+        console.error("Pinterest stream error:", error);
+        api.sendMessage("❌ An error occurred while retrieving or sending images.", event.threadID);
+      }
     });
-    resultMsg += `\n> Thanks for using vern-site!`;
-
-    return api.sendMessage(resultMsg, threadID, messageID);
-
-  } catch (error) {
-    console.error('❌ Error in pinterest command:', error.message || error);
-
-    const errorMessage = `════『 𝗣𝗜𝗡𝗧𝗘𝗥𝗘𝗦𝗧 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
-      `🚫 Failed to search Pinterest.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
-      `> Please try again later.`;
-
-    return api.sendMessage(errorMessage, threadID, messageID);
+  } catch (err) {
+    api.sendMessage(err.message, event.threadID);
   }
 };
