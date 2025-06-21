@@ -1,53 +1,52 @@
-const fs = require("fs");
-const path = require("path");
+const axios = require('axios');
 
 module.exports.config = {
-    name: 'teach',
-    version: '1.1.0',
-    role: 0,
-    description: "Teach the bot to respond like a person (locally)",
-    usage: "teach [question] | [answer]",
-    credits: 'Developer',
-    cooldown: 3,
+  name: 'teach',
+  version: '1.0.0',
+  role: 0,
+  hasPrefix: false,
+  aliases: ['simsimi-teach'],
+  description: 'Teach the SimSimi API with a question and answer.',
+  usage: 'teach <ask> | <answer>',
+  credits: 'Developer',
+  cooldown: 5,
 };
 
-const knowledgeFilePath = path.join(__dirname, "knowledge.json"); // Store knowledge in a JSON file
-
-// Function to load the knowledge base
-function loadKnowledge() {
-    try {
-        const data = fs.readFileSync(knowledgeFilePath, "utf8");
-        return JSON.parse(data);
-    } catch (error) {
-        return {}; // Return empty object if file doesn't exist or is invalid
-    }
-}
-
-// Function to save the knowledge base
-function saveKnowledge(knowledge) {
-    fs.writeFileSync(knowledgeFilePath, JSON.stringify(knowledge, null, 2), "utf8");
-}
-
 module.exports.run = async function({ api, event, args }) {
-    let { messageID, threadID } = event;
-    const input = args.join(" ").split("|");
+  const senderId = event.senderID;
+  const input = args.join(' ').split('|').map(part => part.trim());
+  const ask = input[0];
+  const ans = input[1];
 
-    if (input.length < 2) {
-        if(args.length == 0){
-            return api.sendMessage("Usage: teach [question] | [answer]", threadID, messageID);
-        } else if(args.join(" ").includes("|")) {
-            return api.sendMessage("Please provide both a question and an answer.", threadID, messageID);
-        } else {
-            return api.sendMessage("Please use '|' character to separate the question and answer.", threadID, messageID);
-        }
+  if (!ask || !ans) {
+    return api.sendMessage(
+      'Error: Please provide a question and an answer separated by "|".\nExample: teach Hello | Hi there!',
+      event.threadID,
+      event.messageID
+    );
+  }
+
+  const waitingMessage = 'Submitting your teach request...';
+  api.sendMessage(waitingMessage, event.threadID, async (err, info) => {
+    if (err) return;
+
+    try {
+      const apiKey = '2a5a2264d2ee4f0b847cb8bd809ed34bc3309be7';
+      const apiUrl = `https://simsimi.ooguy.com/teach?ask=${encodeURIComponent(ask)}&ans=${encodeURIComponent(ans)}&apikey=${apiKey}`;
+      const { data } = await axios.get(apiUrl);
+
+      if (!data || !data.message) {
+        return api.editMessage('Error: No response from Teach API.', info.messageID);
+      }
+
+      const teachNote = data.teachResponse?.respond || 'No extra details.';
+      return api.editMessage(
+        `Teach Response: ${data.message}\nNote: ${teachNote}`,
+        info.messageID
+      );
+    } catch (error) {
+      console.error('Teach command error:', error.message);
+      return api.editMessage('Error: Failed to connect to Teach API.', info.messageID);
     }
-
-    const question = input[0].trim().toLowerCase(); // Convert to lowercase for easier matching
-    const answer = input[1].trim();
-
-    const knowledge = loadKnowledge();
-    knowledge[question] = answer;
-    saveKnowledge(knowledge);
-
-    api.sendMessage(`Successfully taught. Question: ${input[0].trim()} | Answer: ${input[1].trim()}`, threadID, messageID);
+  });
 };
