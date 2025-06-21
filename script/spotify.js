@@ -1,68 +1,61 @@
-const axios = require('axios');
-const { sendMessage } = require('../handles/sendMessage');
-const fs = require('fs');
-
-// Read token for sending messages
-const token = fs.readFileSync('token.txt', 'utf8');
+const axios = require("axios");
 
 module.exports = {
-  name: 'spotify',
-  description: 'Fetch Spotify track details by song name.',
-  usage: 'spotify <song name>',
-  author: 'Vern',
+  config: {
+    name: "spotify",
+    version: "1.0.0",
+    author: "vernex",
+    description: "Search and play Spotify music via Hiroshi API",
+    cooldowns: 5,
+    dependencies: {
+      axios: ""
+    }
+  },
 
-  async execute(senderId, args) {
-    const pageAccessToken = token;
+  run: async function ({ api, event, args }) {
+    const { threadID, messageID } = event;
 
-    if (!Array.isArray(args) || args.length === 0) {
-      return await sendError(senderId, '❌ Please provide a song name.', pageAccessToken);
+    if (!args[0]) {
+      return api.sendMessage(
+        "🎵 Usage:\n/spotify [song name]\n\nExample:\n/spotify Someone You Loved",
+        threadID,
+        messageID
+      );
     }
 
-    const query = args.join(' ').trim();
-    await fetchSpotifyTrack(senderId, query, pageAccessToken);
+    const query = args.join(" ");
+    const apiUrl = `https://hiroshi-api.onrender.com/tiktok/spotify?search=${encodeURIComponent(query)}`;
+
+    try {
+      await api.sendMessage(`🔍 Searching Spotify for: "${query}"...`, threadID, messageID);
+
+      const { data } = await axios.get(apiUrl);
+      const result = data?.[0];
+
+      if (!result) {
+        return api.sendMessage("❌ No results found.", threadID, messageID);
+      }
+
+      const message = `
+🎶 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 𝗥𝗘𝗦𝗨𝗟𝗧𝗦 🎶
+━━━━━━━━━━━━━━━
+🎧 Title: ${result.name}
+🔗 Link: ${result.track}
+━━━━━━━━━━━━━━━`.trim();
+
+      await api.sendMessage(message, threadID, messageID);
+
+      if (result.image) {
+        await api.sendMessage({ attachment: await global.getStreamFromURL(result.image) }, threadID, messageID);
+      }
+
+      if (result.download) {
+        await api.sendMessage({ attachment: await global.getStreamFromURL(result.download) }, threadID, messageID);
+      }
+
+    } catch (err) {
+      console.error("❌ Spotify command error:", err.message);
+      return api.sendMessage(`❌ Failed to fetch data.\nReason: ${err.message}`, threadID, messageID);
+    }
   }
 };
-
-async function fetchSpotifyTrack(senderId, query, pageAccessToken) {
-  try {
-    const apiUrl = `https://hiroshi-api.onrender.com/tiktok/spotify?search=${encodeURIComponent(query)}`;
-    const { data } = await axios.get(apiUrl);
-
-    if (!data || data.length === 0) {
-      return await sendError(senderId, '❌ No results found.', pageAccessToken);
-    }
-
-    const { name: title, track, image, download } = data[0];
-
-    const message = `🎶 | Now Playing
-━━━━━━━━━━━━━━━
-🎧 Track: ${title}
-🔗 Listen: ${track}
-━━━━━━━━━━━━━━━`;
-    await sendMessage(senderId, { text: message }, pageAccessToken);
-
-    if (image) {
-      const imageAttachment = formatAttachment('image', image);
-      await sendMessage(senderId, { attachment: imageAttachment }, pageAccessToken);
-    }
-
-    if (download) {
-      const audioAttachment = formatAttachment('audio', download);
-      await sendMessage(senderId, { attachment: audioAttachment }, pageAccessToken);
-    }
-  } catch (err) {
-    console.error('❌ Spotify Fetch Error:', err);
-    await sendError(senderId, '❌ Failed to fetch track. Please try again later.', pageAccessToken);
-  }
-}
-
-function formatAttachment(type, url) {
-  return {
-    type,
-    payload: { url }
-  };
-}
-
-async function sendError(senderId, text, pageAccessToken) {
-  await sendMessage(senderId, { text }, pageAccessToken);
-}
