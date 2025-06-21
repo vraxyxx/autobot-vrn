@@ -1,73 +1,47 @@
-const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
-const { DateTime } = require("luxon");
+const axios = require('axios');
 
 module.exports.config = {
-  name: "blackbox",
-  version: "2.0.0",
+  name: 'blackbox',
+  version: '1.0.0',
   role: 0,
-  aliases: ['box', 'python']
+  hasPrefix: false,
+  aliases: ['bbx'],
+  description: "Ask Blackbox AI anything",
+  usage: "blackbox [your question]",
+  credits: 'Vern',
+  cooldown: 3,
 };
 
-module.exports.run = async function ({ api, event, args }) {
-  let { messageID, threadID, senderID } = event;
-  const query = args.join(" ");
+module.exports.run = async function({ api, event, args }) {
+  const prompt = args.join(" ").trim();
+  const senderID = event.senderID;
+  const threadID = event.threadID;
+  const messageID = event.messageID;
 
-  if (!query) {
-    api.sendMessage("❔ | Please Provide Input...", threadID, messageID);
-    return;
+  if (!prompt) {
+    return api.sendMessage("❌ Please enter a question or prompt.", threadID, messageID);
   }
 
-  try {
-    api.setMessageReaction("🕣", messageID, () => {}, true);
-    api.sendMessage("🕣 | 𝘈𝘯𝘴𝘸𝘦𝘳𝘪𝘯𝘨....", threadID, messageID);
+  api.sendMessage("🤖 𝗕𝗟𝗔𝗖𝗞𝗕𝗢𝗫 𝗔𝗜 𝗜𝗦 𝗧𝗛𝗜𝗡𝗞𝗜𝗡𝗚...", threadID, async (err, info) => {
+    if (err) return;
 
-    // Box API for AI responses
-    const boxUrl = 'https://useblackbox.io/chat-request-v4';
-    const boxData = {
-      textInput: query,
-      allMessages: [{ user: query }],
-      stream: '',
-      clickedContinue: false,
-    };
-    const boxResponse = await axios.post(boxUrl, boxData);
-    const answer = boxResponse.data.response[0][0] || 'No Answers Found';
-    const manilaTime = DateTime.now().setZone("Asia/Manila").toFormat("yyyy-MM-dd hh:mm:ss a");
-
-    // Send AI response text
-    const formattedResponse = `${answer}`;
-    api.sendMessage(formattedResponse, threadID, messageID);
-
-    // Mrbeast Voice
-    const beastUrl = 'https://www.api.vyturex.com/beast';
     try {
-      const beastResponse = await axios.get(`${beastUrl}?query=${encodeURIComponent(answer)}`);
-      if (beastResponse.data && beastResponse.data.audio) {
-        const audioURL = beastResponse.data.audio;
-        const fileName = "mrbeast_voice.mp3"; 
-        const filePath = path.resolve(__dirname, 'cache', fileName);
+      const url = `https://xvi-rest-api.vercel.app/api/blackbox?prompt=${encodeURIComponent(prompt)}`;
+      const { data } = await axios.get(url);
 
-        const { data: audioData } = await axios.get(audioURL, { responseType: 'arraybuffer' });
-        fs.writeFileSync(filePath, audioData);
+      const responseText = data.response || "⚠️ No response from Blackbox AI.";
+      const timePH = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
 
-        api.sendMessage({
-          body: "💽 𝗩𝗼𝗶𝗰𝗲",
-          attachment: fs.createReadStream(filePath)
-        }, threadID, async (voiceError) => {
-          if (voiceError) {
-            console.error('Error sending voice response:', voiceError);
-          }
+      api.getUserInfo(senderID, (err, userInfo) => {
+        const userName = userInfo?.[senderID]?.name || "Unknown";
+        const reply = `🤖 𝗕𝗟𝗔𝗖𝗞𝗕𝗢𝗫 𝗔𝗜\n━━━━━━━━━━━━━━━━━━\n${responseText}\n━━━━━━━━━━━━━━━━━━\n🗣 𝗔𝘀𝗸𝗲𝗱 𝗕𝘆: ${userName}\n⏰ 𝗧𝗶𝗺𝗲: ${timePH}`;
+        api.editMessage(reply, info.messageID);
+      });
 
-          fs.unlinkSync(filePath); // Remove the temporary voice file
-        });
-      } else {
-        console.error("Failed to fetch Beast API response.");
-      }
-    } catch (beastError) {
-      console.error('Error during Beast API request:', beastError);
+    } catch (error) {
+      console.error("Blackbox AI Error:", error);
+      const errMsg = "❌ Error: " + (error.response?.data?.message || error.message || "Something went wrong.");
+      api.editMessage(errMsg, info.messageID);
     }
-  } catch (error) {
-    api.sendMessage(error.message, threadID, messageID);
-  }
+  });
 };
