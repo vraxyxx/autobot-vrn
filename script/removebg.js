@@ -1,73 +1,55 @@
-const axios = require('axios');
-const fs = require('fs-extra');
+const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 
 module.exports.config = {
   name: "removebg",
   version: "1.0.0",
   role: 0,
-  credits: "vraxyxx",
-  description: "Remove image background using the Ferdev API.",
-  usage: "/removebg <image link>",
-  prefix: true,
-  cooldowns: 3,
-  commandCategory: "Tools"
+  credits: "Vern",
+  aliases: [],
+  usages: "< reply to image >",
+  cooldown: 5,
 };
 
-module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID } = event;
-  const link = args.join(' ').trim();
-  const prefix = "/"; // Adjust if your bot uses a different prefix
+module.exports.run = async ({ api, event }) => {
+  const { threadID, messageID, messageReply } = event;
+  const tempPath = path.join(__dirname, 'cache', `nobg_${Date.now()}.png`);
 
-  // No link provided
-  if (!link) {
-    const usageMessage = `════『 𝗥𝗘𝗠𝗢𝗩𝗘𝗕𝗚 』════\n\n` +
-      `⚠️ Please provide an image link to remove its background.\n\n` +
-      `📌 Usage: ${prefix}removebg <image link>\n` +
-      `💬 Example: ${prefix}removebg https://files.catbox.moe/91e6rp.jpg\n\n` +
-      `> Thank you for using RemoveBG!`;
-
-    return api.sendMessage(usageMessage, threadID, messageID);
+  if (!messageReply || !messageReply.attachments || messageReply.attachments.length === 0) {
+    return api.sendMessage("❌ Please reply to an image to remove its background.", threadID, messageID);
   }
 
+  const attachment = messageReply.attachments[0];
+  if (attachment.type !== "photo") {
+    return api.sendMessage("❌ The replied message must be a photo.", threadID, messageID);
+  }
+
+  const imageUrl = attachment.url;
+  const apiUrl = `https://rapido.zetsu.xyz/api/remove-background?imageUrl=${encodeURIComponent(imageUrl)}`;
+
   try {
-    // Send loading message first
-    const waitMsg = `════『 𝗥𝗘𝗠𝗢𝗩𝗘𝗕𝗚 』════\n\n` +
-      `🖼️ Removing background from: "${link}"\nPlease wait a moment...`;
-    await api.sendMessage(waitMsg, threadID, messageID);
+    api.sendMessage("⌛ Removing background, please wait...", threadID, messageID);
 
-    // Call the RemoveBG API
-    const apiUrl = "https://api.ferdev.my.id/tools/removebg";
-    const response = await axios.get(apiUrl, {
-      params: {
-        link: link
-      },
-      responseType: 'arraybuffer'
-    });
+    const response = await axios.get(apiUrl);
+    const resultUrl = response.data?.result;
 
-    // Save the image to a temporary file
-    const tempPath = __dirname + `/cache/removebg_${Date.now()}.png`;
-    await fs.outputFile(tempPath, Buffer.from(response.data, "binary"));
+    if (!resultUrl) {
+      return api.sendMessage(`❌ Failed to remove background. Reason: ${response.data?.message || 'Unknown error'}`, threadID, messageID);
+    }
 
-    // Send the resulting image
-    await api.sendMessage(
-      {
-        body: "✅ Here is your image with the background removed!",
-        attachment: fs.createReadStream(tempPath)
-      },
-      threadID,
-      async () => {
-        // Delete the temp file after sending
-        await fs.remove(tempPath);
-      },
-      messageID
-    );
-  } catch (error) {
-    console.error('❌ Error in removebg command:', error.message || error);
+    // Download the processed image
+    const imageData = await axios.get(resultUrl, { responseType: "arraybuffer" });
+    fs.ensureDirSync(path.dirname(tempPath));
+    fs.writeFileSync(tempPath, Buffer.from(imageData.data, "binary"));
 
-    const errorMessage = `════『 𝗥𝗘𝗠𝗢𝗩𝗘𝗕𝗚 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
-      `🚫 Failed to remove background from image.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
-      `> Please try again later.`;
+    api.sendMessage({
+      body: "✅ Background removed successfully!",
+      attachment: fs.createReadStream(tempPath)
+    }, threadID, () => fs.unlinkSync(tempPath), messageID);
 
-    return api.sendMessage(errorMessage, threadID, messageID);
+  } catch (err) {
+    console.error("❌ Error removing background:", err);
+    api.sendMessage("❌ An error occurred while removing the background. Please try again later.", threadID, messageID);
   }
 };
