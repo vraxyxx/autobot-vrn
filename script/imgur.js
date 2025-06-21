@@ -1,53 +1,60 @@
-const axios = require("axios");
+const axios = require('axios');
+const fs = require('fs-extra');
 
 module.exports.config = {
-  name: "imgur",
-  version: "1.0",
-  credits: "vern", // Do not change
-  description: "Convert replied image to Imgur JPG link",
-  usage: "Reply to an image with: imgur",
-  cooldown: 5,
-  permissions: [0],
-  commandCategory: "image",
+  name: 'imgur',
+  version: '1.0.0',
+  role: 0,
+  aliases: ['uploadimgur'],
+  description: 'Upload an image to Imgur and get the link',
+  usage: '<reply to an image>',
+  credits: 'developer',
+  cooldown: 3,
 };
 
-module.exports.run = async function ({ api, event }) {
-  const { messageReply, threadID, messageID } = event;
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID, messageReply } = event;
+  const imageUrl = messageReply?.attachments?.[0]?.url;
 
-  // Require user to reply to an image
-  if (!messageReply || !messageReply.attachments || messageReply.attachments[0].type !== "photo") {
+  if (!imageUrl) {
     return api.sendMessage(
-      `❌ | Please reply to an image to convert it to Imgur JPG.`,
+      '❌ Please reply to an image or video to upload it to Imgur.',
       threadID,
       messageID
     );
   }
 
-  const imageUrl = messageReply.attachments[0].url;
+  const apiUrl = `https://betadash-uploader.vercel.app/imgur?link=${encodeURIComponent(imageUrl)}`;
 
-  // Notify processing
-  api.sendMessage("🖼️ | Uploading image to Imgur...", threadID, messageID);
+  api.sendMessage(
+    '⌛ Uploading the image to Imgur, please wait...',
+    threadID,
+    async (err, info) => {
+      if (err) return;
 
-  try {
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/imgur?url=${encodeURIComponent(imageUrl)}&apikey=4fe7e522-70b7-420b-a746-d7a23db49ee5`;
-    const response = await axios.get(apiUrl);
+      try {
+        const response = await axios.get(apiUrl);
+        const imgurLink = response?.data?.uploaded?.image;
 
-    const imgurLink = response?.data?.url || response?.data?.data?.url;
-
-    if (!imgurLink) {
-      throw new Error("Imgur response did not contain a valid URL.");
+        if (imgurLink) {
+          api.sendMessage(
+            `✅ Uploaded successfully!\n\n${imgurLink}`,
+            threadID,
+            messageID
+          );
+        } else {
+          api.editMessage(
+            '❌ Failed to upload the image. Imgur link not found.',
+            info.messageID
+          );
+        }
+      } catch (error) {
+        console.error('❌ Error uploading image to Imgur:', error.response?.data || error.message);
+        api.editMessage(
+          '❌ An error occurred while uploading to Imgur. Please try again later.',
+          info.messageID
+        );
+      }
     }
-
-    return api.sendMessage({
-      body: `✅ | Uploaded Successfully:\n\n${imgurLink}`
-    }, threadID, messageID);
-
-  } catch (error) {
-    console.error("❌ Error uploading to Imgur:", error);
-    return api.sendMessage(
-      `❌ | Failed to upload image to Imgur.\nReason: ${error.message || "Unknown error"}`,
-      threadID,
-      messageID
-    );
-  }
+  );
 };
