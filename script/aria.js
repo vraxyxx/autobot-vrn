@@ -7,7 +7,7 @@ module.exports.config = {
   credits: "vern",
   description: "Ask Aria AI any question using the Rapido API.",
   usage: "/aria <your question>",
-  prefix: true,
+  prefix: false,
   cooldowns: 3,
   commandCategory: "AI"
 };
