@@ -25,22 +25,17 @@ module.exports.config = {
   name: "autodl",
   version: "1.0.0",
   role: 0,
-  hasPrefix: false,
-  aliases: [],
-  usage: "Paste a video link",
-  description: "Auto-download detected video links from supported platforms",
-  credits: "Kenneth Panio + Vernex",
-  cooldown: 5
+  event: true,
+  description: "Auto-download videos from links detected in chat",
+  credits: "Kenneth Panio + Vernex"
 };
 
-module.exports.run = async function ({ api, event, args }) {
+module.exports.handleEvent = async function ({ api, event }) {
   const body = event.body;
   if (!body) return;
 
   const links = body.match(/https?:\/\/[^\s]+/g);
-  if (!links || links.length === 0) {
-    return api.sendMessage(`❗ No valid link found in the message.`, event.threadID, event.messageID);
-  }
+  if (!links || links.length === 0) return;
 
   for (const link of links) {
     for (const [_, { regex, name }] of Object.entries(PLATFORMS)) {
@@ -54,32 +49,35 @@ module.exports.run = async function ({ api, event, args }) {
             responseType: 'stream'
           });
 
-          const ext = response.headers['content-type'].includes('video') ? '.mp4' : '.bin';
+          const contentType = response.headers['content-type'];
+          const ext = contentType.includes('video') ? '.mp4' : '.bin';
           const filePath = path.join(__dirname, 'cache', `${Date.now()}_autodl${ext}`);
+
           const writer = fs.createWriteStream(filePath);
           response.data.pipe(writer);
 
           writer.on('finish', () => {
             const message = {
-              body: `📥 Downloaded from ${name}`,
+              body: `📥 Auto-downloaded from ${name}`,
               attachment: fs.createReadStream(filePath)
             };
-            api.sendMessage(message, event.threadID, () => fs.unlinkSync(filePath), event.messageID);
+
+            api.sendMessage(message, event.threadID, () => {
+              fs.unlinkSync(filePath);
+            }, event.messageID);
           });
 
           writer.on('error', err => {
-            console.error('Download error:', err);
-            api.sendMessage(`❌ Failed to download the video.`, event.threadID, event.messageID);
+            console.error('[autodl] Write error:', err);
+            api.sendMessage(`❌ Failed to write the video file.`, event.threadID, event.messageID);
           });
 
           return;
         } catch (err) {
-          console.error(`Error downloading from ${name}:`, err.message);
-          return api.sendMessage(`❌ Error downloading from ${name}.`, event.threadID, event.messageID);
+          console.error(`[autodl] Error fetching from ${name}:`, err.message);
+          return api.sendMessage(`❌ Failed to download from ${name}.`, event.threadID, event.messageID);
         }
       }
     }
   }
-
-  return api.sendMessage(`⚠️ No supported video link detected.`, event.threadID, event.messageID);
 };
