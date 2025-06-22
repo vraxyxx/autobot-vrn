@@ -1,61 +1,70 @@
-const axios = require("axios");
+const axios = require('axios');
+const { sendMessage } = require('../handles/sendMessage');
+const fs = require('fs');
+const path = require('path');
 
 module.exports = {
-  config: {
-    name: "spotify",
-    version: "1.0.0",
-    author: "vernex",
-    description: "Search and play Spotify music via Hiroshi API",
-    cooldowns: 5,
-    dependencies: {
-      axios: ""
-    }
-  },
+  name: 'spotify',
+  description: 'Search Spotify tracks using Ferdev API and send image/audio',
+  usage: 'spotify <song name>',
+  cooldown: 5,
 
-  run: async function ({ api, event, args }) {
-    const { threadID, messageID } = event;
-
-    if (!args[0]) {
-      return api.sendMessage(
-        "🎵 Usage:\n/spotify [song name]\n\nExample:\n/spotify Someone You Loved",
-        threadID,
-        messageID
-      );
-    }
-
+  async execute({ api, event, args }) {
     const query = args.join(" ");
-    const apiUrl = `https://hiroshi-api.onrender.com/tiktok/spotify?search=${encodeURIComponent(query)}`;
+    if (!query) {
+      return sendMessage(api, event, "❌ Please enter a song name.\n\nExample:\nspotify love story");
+    }
 
     try {
-      await api.sendMessage(`🔍 Searching Spotify for: "${query}"...`, threadID, messageID);
+      const res = await axios.get(`https://api.ferdev.my.id/search/spotify?query=${encodeURIComponent(query)}`);
+      const tracks = res.data.result;
 
-      const { data } = await axios.get(apiUrl);
-      const result = data?.[0];
-
-      if (!result) {
-        return api.sendMessage("❌ No results found.", threadID, messageID);
+      if (!tracks || tracks.length === 0) {
+        return sendMessage(api, event, `😕 No results found for: "${query}"`);
       }
 
-      const message = `
-🎶 𝗦𝗣𝗢𝗧𝗜𝗙𝗬 𝗥𝗘𝗦𝗨𝗟𝗧𝗦 🎶
-━━━━━━━━━━━━━━━
-🎧 Title: ${result.name}
-🔗 Link: ${result.track}
-━━━━━━━━━━━━━━━`.trim();
+      const track = tracks[0]; // take first match
 
-      await api.sendMessage(message, threadID, messageID);
+      // Paths for saving media files
+      const imgPath = path.join(__dirname, `cache_${event.threadID}.jpg`);
+      const audioPath = path.join(__dirname, `preview_${event.threadID}.mp3`);
 
-      if (result.image) {
-        await api.sendMessage({ attachment: await global.getStreamFromURL(result.image) }, threadID, messageID);
+      // Download album thumbnail
+      const imgRes = await axios.get(track.thumbnail, { responseType: 'arraybuffer' });
+      fs.writeFileSync(imgPath, imgRes.data);
+
+      // Download audio preview (if available)
+      let attachments = [fs.createReadStream(imgPath)];
+      if (track.preview_url) {
+        const audioRes = await axios.get(track.preview_url, { responseType: 'arraybuffer' });
+        fs.writeFileSync(audioPath, audioRes.data);
+        attachments.push(fs.createReadStream(audioPath));
       }
 
-      if (result.download) {
-        await api.sendMessage({ attachment: await global.getStreamFromURL(result.download) }, threadID, messageID);
+      // Message body
+      let message = `🎧 𝗦𝗽𝗼𝘁𝗶𝗳𝘆 𝗦𝗲𝗮𝗿𝗰𝗵 𝗥𝗲𝘀𝘂𝗹𝘁\n\n`;
+      message += `🎵 Title: ${track.title}\n`;
+      message += `👤 Artist: ${track.artists}\n`;
+      message += `🔗 URL: ${track.url}\n`;
+
+      if (track.preview_url) {
+        message += `🔊 Sending preview audio...`;
+      } else {
+        message += `⚠️ No audio preview available.`;
       }
+
+      // Send message with attachments
+      return sendMessage(api, event, {
+        body: message,
+        attachment: attachments
+      }, () => {
+        fs.unlinkSync(imgPath);
+        if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+      });
 
     } catch (err) {
-      console.error("❌ Spotify command error:", err.message);
-      return api.sendMessage(`❌ Failed to fetch data.\nReason: ${err.message}`, threadID, messageID);
+      console.error("Spotify Error:", err.message);
+      return sendMessage(api, event, "❌ Error fetching Spotify data.");
     }
   }
 };
