@@ -1,70 +1,82 @@
 const axios = require('axios');
-const { sendMessage } = require('../handles/sendMessage');
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 
-module.exports = {
-  name: 'spotify',
-  description: 'Search Spotify tracks using Ferdev API and send image/audio',
-  usage: 'spotify <song name>',
-  cooldown: 5,
+const SEARCH_URL = 'https://api.ferdev.my.id/search/spotify';
 
-  async execute({ api, event, args }) {
-    const query = args.join(" ");
-    if (!query) {
-      return sendMessage(api, event, "❌ Please enter a song name.\n\nExample:\nspotify love story");
+module.exports.config = {
+  name: "spotify",
+  version: "1.0.0",
+  role: 0,
+  hasPrefix: true,
+  aliases: ['spot'],
+  usage: 'spotify [song name]',
+  description: 'Search and play music preview from Spotify',
+  credits: 'Vernex',
+  cooldown: 5
+};
+
+module.exports.run = async function ({ api, event, args }) {
+  const query = args.join(' ');
+  if (!query) {
+    return api.sendMessage(`❗ Please provide a song name.`, event.threadID, event.messageID);
+  }
+
+  api.sendMessage(`🔍 Searching Spotify for "${query}"...`, event.threadID, event.messageID);
+
+  try {
+    const res = await axios.get(SEARCH_URL, {
+      params: { query }
+    });
+
+    const track = res.data?.result?.[0];
+    if (!track) {
+      return api.sendMessage(`❌ No result found for "${query}".`, event.threadID, event.messageID);
     }
 
-    try {
-      const res = await axios.get(`https://api.ferdev.my.id/search/spotify?query=${encodeURIComponent(query)}`);
-      const tracks = res.data.result;
+    const { title, artists, url, thumbnail, preview_url } = track;
 
-      if (!tracks || tracks.length === 0) {
-        return sendMessage(api, event, `😕 No results found for: "${query}"`);
-      }
-
-      const track = tracks[0]; // take first match
-
-      // Paths for saving media files
-      const imgPath = path.join(__dirname, `cache_${event.threadID}.jpg`);
-      const audioPath = path.join(__dirname, `preview_${event.threadID}.mp3`);
-
-      // Download album thumbnail
-      const imgRes = await axios.get(track.thumbnail, { responseType: 'arraybuffer' });
-      fs.writeFileSync(imgPath, imgRes.data);
-
-      // Download audio preview (if available)
-      let attachments = [fs.createReadStream(imgPath)];
-      if (track.preview_url) {
-        const audioRes = await axios.get(track.preview_url, { responseType: 'arraybuffer' });
-        fs.writeFileSync(audioPath, audioRes.data);
-        attachments.push(fs.createReadStream(audioPath));
-      }
-
-      // Message body
-      let message = `🎧 𝗦𝗽𝗼𝘁𝗶𝗳𝘆 𝗦𝗲𝗮𝗿𝗰𝗵 𝗥𝗲𝘀𝘂𝗹𝘁\n\n`;
-      message += `🎵 Title: ${track.title}\n`;
-      message += `👤 Artist: ${track.artists}\n`;
-      message += `🔗 URL: ${track.url}\n`;
-
-      if (track.preview_url) {
-        message += `🔊 Sending preview audio...`;
-      } else {
-        message += `⚠️ No audio preview available.`;
-      }
-
-      // Send message with attachments
-      return sendMessage(api, event, {
-        body: message,
-        attachment: attachments
-      }, () => {
-        fs.unlinkSync(imgPath);
-        if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
-      });
-
-    } catch (err) {
-      console.error("Spotify Error:", err.message);
-      return sendMessage(api, event, "❌ Error fetching Spotify data.");
+    if (!preview_url) {
+      return api.sendMessage(`⚠️ No audio preview available for "${title}".`, event.threadID, event.messageID);
     }
+
+    // Download preview audio
+    const fileName = `${Date.now()}_spotify.mp3`;
+    const filePath = path.join(__dirname, 'cache', fileName);
+    const writer = fs.createWriteStream(filePath);
+
+    const downloadStream = await axios({
+      method: 'GET',
+      url: preview_url,
+      responseType: 'stream'
+    });
+
+    downloadStream.data.pipe(writer);
+
+    writer.on('finish', async () => {
+      const fileSize = fs.statSync(filePath).size;
+      if (fileSize > 25 * 1024 * 1024) {
+        fs.unlinkSync(filePath);
+        return api.sendMessage(`⚠️ The file is too large to send (over 25MB).`, event.threadID, event.messageID);
+      }
+
+      const message = {
+        body: `🎧 ${title}\n👤 Artist: ${artists}\n🔗 ${url}`,
+        attachment: fs.createReadStream(filePath)
+      };
+
+      api.sendMessage(message, event.threadID, () => {
+        fs.unlinkSync(filePath);
+      }, event.messageID);
+    });
+
+    writer.on('error', (err) => {
+      console.error('Write error:', err);
+      api.sendMessage(`❌ Failed to download audio preview.`, event.threadID, event.messageID);
+    });
+
+  } catch (err) {
+    console.error('Spotify command error:', err.message);
+    api.sendMessage(`❌ An error occurred while processing your request.`, event.threadID, event.messageID);
   }
 };
