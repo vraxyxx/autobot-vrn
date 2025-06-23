@@ -4,51 +4,53 @@ const path = require("path");
 
 module.exports.config = {
   name: "goodbyenoti",
-  eventType: ["log:unsubscribe"], // Trigger on user leave/kick
-  version: "1.0.0",
-  credits: "vern",
-  description: "Send goodbye image using Ace API when someone leaves"
+  version: "1.0.0"
 };
 
-module.exports.run = async function({ event, api }) {
-  const threadID = event.threadID;
-  const leftUser = event.logMessageData?.leftParticipantFbId;
+module.exports.handleEvent = async function ({ api, event }) {
+  if (event.logMessageType !== "log:unsubscribe") return;
 
   try {
-    // Fetch user name
-    const userInfo = await api.getUserInfo(leftUser);
-    const userName = userInfo[leftUser]?.name || "User";
+    const leftID = event.logMessageData.leftParticipantFbId;
+    const userInfo = await api.getUserInfo(leftID);
+    let name = userInfo[leftID]?.name || "User";
 
-    // Get group info to show member count
-    const threadInfo = await api.getThreadInfo(threadID);
+    // Truncate long names
+    if (name.length > 15) name = name.slice(0, 12) + "...";
+
+    const threadInfo = await api.getThreadInfo(event.threadID);
+    const groupName = threadInfo.threadName || "this group";
     const memberCount = threadInfo.participantIDs.length;
 
-    // Avatar of the user
-    const avatarUrl = `https://graph.facebook.com/${leftUser}/picture?width=512&height=512`;
+    const avatarUrl = `https://graph.facebook.com/${leftID}/picture?width=512&height=512`;
+    const background = threadInfo.imageSrc || "https://i.ibb.co/4YBNyvP/images-76.jpg";
+    const apiKey = "APIKEYYYYY"; // Replace with your real API key
 
-    // Optional background image (replace or rotate if needed)
-    const backgroundUrl = "https://i.ibb.co/4YBNyvP/images-76.jpg";
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/goodbye` +
+      `?username=${encodeURIComponent(name)}` +
+      `&avatarUrl=${encodeURIComponent(avatarUrl)}` +
+      `&groupname=${encodeURIComponent(groupName)}` +
+      `&bg=${encodeURIComponent(background)}` +
+      `&memberCount=${memberCount}` +
+      `&apikey=${apiKey}`;
 
-    // Call Ace goodbye API
-    const apiUrl = `https://ace-rest-api.onrender.com/api/goodbye?pp=${encodeURIComponent(avatarUrl)}&nama=${encodeURIComponent(userName)}&bg=${encodeURIComponent(backgroundUrl)}&member=${memberCount}`;
+    const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
 
-    const res = await axios.get(apiUrl, { responseType: "arraybuffer" });
-
-    // Save to cache
-    const imgPath = path.join(__dirname, "cache", `goodbye-${leftUser}.png`);
+    // Save to file
+    const imgPath = path.join(__dirname, "..", "cache", `goodbye-${leftID}.jpg`);
     fs.ensureDirSync(path.dirname(imgPath));
-    fs.writeFileSync(imgPath, Buffer.from(res.data, "binary"));
+    fs.writeFileSync(imgPath, Buffer.from(response.data));
 
-    // Send the goodbye image
+    // Send goodbye message
     await api.sendMessage({
-      body: `👋 ${userName} has left the group.`,
+      body: `👋 ${name} has left ${groupName}. We’ll miss you!`,
       attachment: fs.createReadStream(imgPath)
-    }, threadID);
+    }, event.threadID);
 
-    // Clean up
-    fs.unlinkSync(imgPath);
+    fs.unlinkSync(imgPath); // Clean up
 
-  } catch (err) {
-    console.error("❌ Goodbye event error:", err.message || err);
+  } catch (error) {
+    console.error("❌ Error in goodbyenoti:", error.message || error);
+    api.sendMessage("👋 Someone left the group, but goodbye image failed to load.", event.threadID);
   }
 };
