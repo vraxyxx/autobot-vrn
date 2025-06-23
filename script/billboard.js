@@ -15,7 +15,7 @@ module.exports.config = {
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID } = event;
   const text = args.join(' ').trim();
-  const prefix = "/"; // Change if your bot uses a dynamic prefix
+  const prefix = "/"; // Update if dynamic prefix is used
 
   if (!text) {
     const usageMessage = `════『 𝗕𝗜𝗟𝗟𝗕𝗢𝗔𝗥𝗗 』════\n\n` +
@@ -28,15 +28,13 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   try {
-    // Send loading message first
     const waitMsg = `════『 𝗕𝗜𝗟𝗟𝗕𝗢𝗔𝗥𝗗 』════\n\n` +
       `🖼️ Generating billboard for: "${text}"\nPlease wait a moment...`;
     await api.sendMessage(waitMsg, threadID, messageID);
 
-    // Build API URL
+    // Correct URL (fixed duplicated ?text=)
     const apiUrl = `https://ace-rest-api.onrender.com/api/billboard?text=${encodeURIComponent(text)}`;
 
-    // Download image as stream
     const response = await axios.get(apiUrl, { responseType: 'stream' });
 
     return api.sendMessage({
@@ -45,11 +43,12 @@ module.exports.run = async function ({ api, event, args }) {
     }, threadID, messageID);
 
   } catch (error) {
-    console.error('❌ Error in billboard command:', error.message || error);
+    console.error('❌ Billboard error:', error);
 
-    const errorMessage = `════『 𝗕𝗜𝗟𝗟𝗕𝗢𝗔𝗥𝗗 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
-      `🚫 Failed to generate billboard.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
-      `> Please try again later.`;
+    const errorMessage = `════『 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+      `🚫 Failed to generate billboard.\n` +
+      `🔧 Reason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
+      `Please try again later.`;
 
     return api.sendMessage(errorMessage, threadID, messageID);
   }
