@@ -54,7 +54,7 @@ module.exports.run = async function ({ api, event, args }) {
       resultMsg += "⚠️ No clear response from the SMSBomb API.";
     }
 
-    resultMsg += `\n\n> Powered by Jonell01 SMSBomb API`;
+    resultMsg += `\n\n> Thanks for using vern autobot-site `;
     return api.sendMessage(resultMsg, threadID, messageID);
 
   } catch (error) {
