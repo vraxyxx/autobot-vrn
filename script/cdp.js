@@ -16,41 +16,40 @@ module.exports.run = async function ({ api, event }) {
   const { threadID, messageID } = event;
 
   try {
-    // Send loading message first
+    // Send loading message
     const waitMsg = `════『 𝗖𝗔𝗣𝗖𝗨𝗧 𝗧𝗘𝗠𝗣𝗟𝗔𝗧𝗘 』════\n\n` +
-      `🔄 Fetching a random Capcut template...\nPlease wait a moment.`;
-    await api.sendMessage(waitMsg, threadID, messageID);
+                    `🔄 Fetching a random Capcut template...\nPlease wait a moment.`;
+    await api.sendMessage(waitMsg, threadID);
 
-    // Call the Ace CDP API
+    // Request from API
     const apiUrl = "https://ace-rest-api.onrender.com/api/cdp";
     const response = await axios.get(apiUrl);
-
-    // Try to get the template data from the response
     const data = response.data?.result || response.data;
-    if (!data || !data.title || !data.url) {
-      return api.sendMessage(
-        `⚠️ Unable to fetch a Capcut template.`, threadID, messageID
-      );
+
+    // Validation
+    if (!data || !data.url || !data.title) {
+      return api.sendMessage("⚠️ No valid template found. Try again later.", threadID, messageID);
     }
 
+    // Build response message
     let resultMsg = `════『 𝗖𝗔𝗣𝗖𝗨𝗧 𝗧𝗘𝗠𝗣𝗟𝗔𝗧𝗘 』════\n\n`;
-    resultMsg += `• Title: ${data.title}\n`;
-    if (data.author) resultMsg += `• Author: ${data.author}\n`;
-    if (data.views) resultMsg += `• Views: ${data.views}\n`;
-    if (data.likes) resultMsg += `• Likes: ${data.likes}\n`;
-    resultMsg += `• URL: ${data.url}\n`;
-    if (data.preview) resultMsg += `• Preview: ${data.preview}\n`;
-    resultMsg += `\n> Powered by Ace CDP API`;
+    resultMsg += `📌 Title: ${data.title}\n`;
+    if (data.author) resultMsg += `👤 Author: ${data.author}\n`;
+    if (data.views) resultMsg += `👁️ Views: ${data.views}\n`;
+    if (data.likes) resultMsg += `❤️ Likes: ${data.likes}\n`;
+    resultMsg += `🔗 Link: ${data.url}\n`;
+    if (data.preview) resultMsg += `🎞️ Preview: ${data.preview}\n`;
+    resultMsg += `\n🚀 Powered by Ace CDP API`;
 
     return api.sendMessage(resultMsg, threadID, messageID);
 
   } catch (error) {
-    console.error('❌ Error in cdp command:', error.message || error);
+    console.error("❌ CDP command error:", error);
 
-    const errorMessage = `════『 𝗖𝗔𝗣𝗖𝗨𝗧 𝗧𝗘𝗠𝗣𝗟𝗔𝗧𝗘 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
-      `🚫 Failed to fetch Capcut template.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
-      `> Please try again later.`;
+    const errMsg = `════『 𝗖𝗗𝗣 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
+                   `❌ Could not fetch Capcut template.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
+                   `> Try again later.`;
 
-    return api.sendMessage(errorMessage, threadID, messageID);
+    return api.sendMessage(errMsg, threadID, messageID);
   }
 };
