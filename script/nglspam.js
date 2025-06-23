@@ -49,7 +49,7 @@ module.exports.run = async function ({ api, event, args }) {
     if (data && typeof data === "string") {
       doneMsg += data;
     } else {
-      doneMsg += `✅ Successfully sent ${amount} messages to @${username}!\n\n> Powered by Ace NGL Spam API`;
+      doneMsg += `✅ Successfully sent ${amount} messages to @${username}!\n\n> Thanks for using Vern autobot-site`;
     }
 
     return api.sendMessage(doneMsg, threadID, messageID);
