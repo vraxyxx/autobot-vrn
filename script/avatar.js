@@ -8,7 +8,7 @@ module.exports.config = {
     role: 2,   // admin level permission
     description: "Change bot avatar by URL or by replying to an image",
     prefix: false,
-    credits: "Ry",
+    credits: "Vern",
     cooldowns: 5,
     category: "admin"
 };
