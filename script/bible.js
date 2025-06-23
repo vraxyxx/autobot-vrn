@@ -13,33 +13,35 @@ module.exports.config = {
 };
 
 module.exports.run = async function ({ api, event }) {
-  const threadID = event.threadID;
-  const messageID = event.messageID;
+  const { threadID, messageID } = event;
 
-  // Notify user it's fetching
+  // Notify user
   await api.sendMessage("📖 Fetching a Bible verse...", threadID, messageID);
 
   try {
-    const response = await axios.get("https://mademoiselle2-rest-apis.onrender.com/api/bibleverse");
-    const verse = response.data;
+    const response = await axios.get("https://ace-rest-api.onrender.com/api/bibleverse");
 
-    if (!verse) {
+    const data = response.data;
+
+    // Check if API returned the expected fields
+    if (!data || !data.verse || !data.book || !data.chapter || !data.verse_number) {
       return api.sendMessage(
-        "🥺 Sorry, I couldn't find a Bible verse.",
+        "🥺 Sorry, the verse data was incomplete or not found.",
         threadID,
         messageID
       );
     }
 
-    return api.sendMessage(
-      `📜 Bible Verse\n\n"${verse}"`,
-      threadID,
-      messageID
-    );
+    const message = `📜 𝗕𝗶𝗯𝗹𝗲 𝗩𝗲𝗿𝘀𝗲\n\n` +
+      `"${data.verse}"\n\n` +
+      `📖 ${data.book} ${data.chapter}:${data.verse_number}`;
+
+    return api.sendMessage(message, threadID, messageID);
+
   } catch (error) {
-    console.error("Bible command error:", error.message);
+    console.error("❌ Bible command error:", error);
     return api.sendMessage(
-      `❌ An error occurred: ${error.message}`,
+      `❌ An error occurred while fetching the verse.\nReason: ${error.response?.data?.message || error.message}`,
       threadID,
       messageID
     );
