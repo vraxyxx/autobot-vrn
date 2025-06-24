@@ -33,7 +33,7 @@ module.exports.run = async function({ api, event, args }) {
         imageUrl = event.messageReply.attachments[0].url;
       }
 
-      const { data } = await axios.get("https://ace-rest-api.onrender.com/api/gemini", {
+      const { data } = await axios.get("https://kaiz-apis.gleeze.com/api/gpt4o-mini?ask=what+is+1%2B1&apikey=4fe7e522-70b7-420b-a746-d7a23db49ee5", {
         params: {
           ask: finalPrompt,
           imagurl: imageUrl
