@@ -33,7 +33,7 @@ module.exports.run = async function({ api, event, args }) {
         imageUrl = event.messageReply.attachments[0].url;
       }
 
-      const { data } = await axios.get("https://ace-rest-api.onrender.com/api/gemini", {
+      const { data } = await axios.get("https://ace-rest-api.onrender.com/api/gemini?text=", {
         params: {
           ask: finalPrompt,
           imagurl: imageUrl
