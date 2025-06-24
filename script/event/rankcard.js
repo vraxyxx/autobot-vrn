@@ -6,14 +6,14 @@ module.exports.config = {
   name: "rankcard",
   version: "1.0.0",
   credits: "Vern",
-  description: "Auto-send a rank card when a user sends a message",
-  dependencies: {
-    axios: "",
-    "fs-extra": ""
-  }
+  description: "Auto-send a rank card when a user sends a message (with cooldown)",
+  cooldown: 300, // seconds
 };
 
-// 🧠 Example XP/Level tracker (static example only; dynamic requires DB)
+// User cooldown map (per session)
+const cooldowns = new Map();
+
+// Static XP Data (example only — replace with DB if needed)
 const userProgress = {
   level: 102,
   rank: 563,
@@ -23,6 +23,13 @@ const userProgress = {
 
 module.exports.handleEvent = async function ({ api, event }) {
   const { senderID, threadID } = event;
+
+  // 🛑 Cooldown check: 5 minutes (300000 ms)
+  const now = Date.now();
+  const lastUsed = cooldowns.get(senderID);
+  if (lastUsed && now - lastUsed < 300000) return; // 5-minute cooldown
+
+  cooldowns.set(senderID, now); // update cooldown
 
   try {
     const userInfo = await api.getUserInfo(senderID);
