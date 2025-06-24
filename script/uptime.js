@@ -19,7 +19,7 @@ module.exports.run = async function ({ api, event }) {
     // Send loading message
     await api.sendMessage("🔄 Fetching uptime status... please wait...", threadID);
 
-    const apiUrl = `https://ace-rest-api.onrender.com/api/uptime?instag=vernesg&ghub=vraxyxx&fb=ver%20Cochangco&hours=1&minutes=23&seconds=45&botname=xexi`;
+    const apiUrl = `https://ace-rest-api.onrender.com/api/uptime?instag=vrentut&ghub=vraxyxx&fb=https://www.facebook.com/profile.php?id=61576677958957%20Cochangco&hours=1&minutes=23&seconds=45&botname=xexi`;
 
     const res = await axios.get(apiUrl);
     const result = res?.data?.result;
