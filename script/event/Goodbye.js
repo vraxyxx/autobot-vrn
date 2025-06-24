@@ -12,6 +12,7 @@ module.exports.handleEvent = async function ({ api, event }) {
 
   try {
     const leftID = event.logMessageData.leftParticipantFbId;
+
     const userInfo = await api.getUserInfo(leftID);
     let name = userInfo[leftID]?.name || "User";
 
@@ -24,24 +25,20 @@ module.exports.handleEvent = async function ({ api, event }) {
 
     const avatarUrl = `https://graph.facebook.com/${leftID}/picture?width=512&height=512`;
     const background = threadInfo.imageSrc || "https://i.ibb.co/4YBNyvP/images-76.jpg";
-    const apiKey = "APIKEYYYYY"; // Replace with your real API key
 
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/goodbye` +
-      `?username=${encodeURIComponent(name)}` +
-      `&avatarUrl=${encodeURIComponent(avatarUrl)}` +
-      `&groupname=${encodeURIComponent(groupName)}` +
+    // Build Ace goodbye API URL
+    const apiUrl = `https://ace-rest-api.onrender.com/api/goodbye` +
+      `?pp=${encodeURIComponent(avatarUrl)}` +
+      `&nama=${encodeURIComponent(name)}` +
       `&bg=${encodeURIComponent(background)}` +
-      `&memberCount=${memberCount}` +
-      `&apikey=${apiKey}`;
+      `&member=${memberCount}`;
 
     const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
 
-    // Save to file
     const imgPath = path.join(__dirname, "..", "cache", `goodbye-${leftID}.jpg`);
     fs.ensureDirSync(path.dirname(imgPath));
     fs.writeFileSync(imgPath, Buffer.from(response.data));
 
-    // Send goodbye message
     await api.sendMessage({
       body: `👋 ${name} has left ${groupName}. We’ll miss you!`,
       attachment: fs.createReadStream(imgPath)
