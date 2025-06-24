@@ -1,99 +1,104 @@
 const cron = require('node-cron');
 const axios = require('axios');
-const { OnChat, font } = require('chatbox-utility');
 
 module.exports.config = {
   name: "autopost",
-  type: "event",
-  eventType: ["message", "message_reply"],
   version: "1.0.0",
-  credits: "aminul", // DO NOT CHANGE
+  credits: "aminul & fixed by Vern",
+  description: "Auto greet and post motivation at scheduled times",
+  dependencies: {
+    "node-cron": "",
+    "axios": ""
+  }
 };
 
 let isCronStarted = false;
 
+// Greeting messages
 const greetings = {
   morning: [
-    "Good morning! Have a great day!",
-    "Rise and shine! Good morning!",
-    "Morning! Hope you have an amazing day!",
-    "Gising na kayo umaga na!",
+    "☀️ Good morning! Have a great day!",
+    "🌅 Rise and shine!",
+    "Gising na kayo, umaga na!",
   ],
   afternoon: [
-    "Good afternoon! Keep up the great work!",
-    "Afternoon! Hope you're having a wonderful day!",
-    "Hello! Wishing you a pleasant afternoon!",
-    "Time to eat something!",
-    "Maayong udto mga ril nigas pangaon namo!",
+    "🍛 Maayong udto mga ril, nigas pangaon namo!",
+    "🌞 Good afternoon! Stay productive!",
   ],
   evening: [
-    "Good evening! Relax and enjoy your evening!",
-    "Evening! Hope you had a productive day!",
-    "Hello! Have a peaceful and enjoyable evening!",
+    "🌇 Good evening! Take it easy.",
+    "🌆 Hello! Hope your day went well.",
   ],
   night: [
-    "Good night! Rest well!",
-    "Night! Sweet dreams!",
-    "Hello! Wishing you a restful night!",
-    "Tulog na kayo!",
+    "🌙 Good night! Rest well.",
+    "😴 Tulog na kayo!",
   ]
 };
 
-function greetRandom(timeOfDay) {
-  const messages = greetings[timeOfDay];
-  return messages[Math.floor(Math.random() * messages.length)];
+// Random greeting selector
+function getGreeting(timeOfDay) {
+  const list = greetings[timeOfDay] || [];
+  return list[Math.floor(Math.random() * list.length)];
 }
 
-async function motivation(chat) {
-  try {
-    console.log('Posting motivational quote...');
-    const res = await axios.get("https://raw.githubusercontent.com/JamesFT/Database-Quotes-JSON/master/quotes.json");
-    const quotes = res.data;
-    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+// Send greeting to group threads
+async function greetGroups(api, timeOfDay) {
+  const threads = await api.getThreadList(10, null, ["INBOX"]);
+  const message = getGreeting(timeOfDay);
 
-    const quoteText = `"${randomQuote.quoteText}"\n\n— ${randomQuote.quoteAuthor || "Vern"}`;
-    await chat.post(font.thin(quoteText));
-  } catch (err) {
-    console.error('Error fetching/posting motivational quote:', err);
+  for (const thread of threads) {
+    if (thread.isGroup) {
+      await api.sendMessage(message, thread.threadID);
+    }
   }
 }
 
-async function greetThreads(chat, timeOfDay) {
+// Fetch and post random motivational quote
+async function postMotivation(api) {
   try {
-    const message = greetRandom(timeOfDay);
-    const threads = await chat.threadList(10, null, ['INBOX']);
+    const res = await axios.get("https://raw.githubusercontent.com/JamesFT/Database-Quotes-JSON/master/quotes.json");
+    const quotes = res.data;
+    const random = quotes[Math.floor(Math.random() * quotes.length)];
+    const text = `🧠 "${random.quoteText}"\n— ${random.quoteAuthor || "Vern"}`;
 
+    const threads = await api.getThreadList(10, null, ["INBOX"]);
     for (const thread of threads) {
       if (thread.isGroup) {
-        await chat.reply(font.thin(message), thread.threadID);
+        await api.sendMessage(text, thread.threadID);
       }
     }
   } catch (err) {
-    console.error(`Error sending ${timeOfDay} greeting:`, err);
+    console.error("[❌] Failed to fetch motivation quote:", err.message);
   }
 }
 
-function scheduleJobs(chat) {
+// Schedule all cron jobs
+function schedule(api) {
   if (isCronStarted) return;
   isCronStarted = true;
 
-  const scheduleCronJobs = (hours, timeOfDay) => {
+  const scheduleGreeting = (hours, timeOfDay) => {
     hours.forEach(hour => {
-      cron.schedule(`0 ${hour} * * *`, () => {
-        greetThreads(chat, timeOfDay);
-      }, { timezone: "Asia/Dhaka" });
+      cron.schedule(`0 ${hour} * * *`, () => greetGroups(api, timeOfDay), {
+        timezone: "Asia/Manila"
+      });
     });
   };
 
-  scheduleCronJobs([5, 6, 7], "morning");
-  scheduleCronJobs([12, 13], "afternoon");
-  scheduleCronJobs([18, 19, 20, 21], "evening");
-  scheduleCronJobs([22, 23], "night");
+  scheduleGreeting([6, 7, 8], "morning");
+  scheduleGreeting([12, 13], "afternoon");
+  scheduleGreeting([17, 18, 19], "evening");
+  scheduleGreeting([21, 22], "night");
 
-  cron.schedule("*/50 * * * *", () => motivation(chat), { timezone: "Asia/Dhaka" });
+  // Motivation every hour at :50
+  cron.schedule("50 * * * *", () => postMotivation(api), {
+    timezone: "Asia/Manila"
+  });
+
+  console.log("[✅] AutoPost cron jobs scheduled.");
 }
 
+// Run once to initialize
 module.exports.run = async function ({ api, event }) {
-  const chat = new OnChat(api, event);
-  scheduleJobs(chat);
+  schedule(api);
 };
