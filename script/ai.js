@@ -33,20 +33,27 @@ module.exports.run = async function({ api, event, args }) {
         imageUrl = event.messageReply.attachments[0].url;
       }
 
-      const { data } = await axios.get("https://api.ferdev.my.id/ai/gemini?prompt=what%20is%20love%20", {
+      // Use correct param names expected by the API
+      const { data } = await axios.get("https://api.ferdev.my.id/ai/gemini", {
         params: {
-          ask: finalPrompt,
-          imagurl: imageUrl
+          prompt: finalPrompt,
+          image: imageUrl
         }
       });
 
       const responseText = data.description || "❌ No response received from AI.";
 
-      // Optional: Get user's name
       api.getUserInfo(senderID, (err, infoUser) => {
         const userName = infoUser?.[senderID]?.name || "Unknown User";
         const timePH = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
-        const replyMessage = `🤖 𝗔𝗜 𝗔𝗦𝗦𝗜𝗦𝗧𝗔𝗡𝗧\n━━━━━━━━━━━━━━━━━━\n${responseText}\n━━━━━━━━━━━━━━━━━━\n🗣 𝗔𝘀𝗸𝗲𝗱 𝗕𝘆: ${userName}\n⏰ 𝗧𝗶𝗺𝗲: ${timePH}`;
+
+        const replyMessage = 
+`🤖 𝗔𝗜 𝗔𝗦𝗦𝗜𝗦𝗧𝗔𝗡𝗧
+━━━━━━━━━━━━━━━━━━
+${responseText}
+━━━━━━━━━━━━━━━━━━
+🗣 𝗔𝘀𝗸𝗲𝗱 𝗕𝘆: ${userName}
+⏰ 𝗧𝗶𝗺𝗲: ${timePH}`;
 
         api.editMessage(replyMessage, info.messageID);
       });
