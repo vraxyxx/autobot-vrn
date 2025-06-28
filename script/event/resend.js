@@ -49,7 +49,7 @@ api.sendMessage({body:`${name} ging unsend nana ang voice message ngaya: ${msgDa
 
  fs.writeFileSync(`./script/cache/animated_image.gif`, Buffer.from(data)) 
 
-api.sendMessage({body:`${name} ging unsend na ang gift ngaya: ${msgData[event.messageID].body}`, attachment: fs.createReadStream('./script/cache/animated_image.gif')}, event.threadID, () => {
+api.sendMessage({body:`${name} ito inuntsent ni kupal oh: ${msgData[event.messageID].body}`, attachment: fs.createReadStream('./script/cache/animated_image.gif')}, event.threadID, () => {
      fs.unlinkSync('./script/cache/animated_image.gif')
              });     
     }
