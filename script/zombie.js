@@ -6,17 +6,17 @@ module.exports.config = {
   name: "zombie",
   version: "1.0.0",
   role: 0,
-  credits: "developer",
+  credits: "Vern",
   aliases: [],
-  usages: "< reply to an image >",
+  usages: "< reply to image >",
   cooldown: 5,
 };
 
 module.exports.run = async ({ api, event }) => {
   const { threadID, messageID, messageReply } = event;
-  const tempPath = path.join(__dirname, "cache", `zombie_${Date.now()}.jpg`);
+  const tempPath = path.join(__dirname, "cache", `zombiev2_${Date.now()}.jpg`);
 
-  // Validate reply to image
+  // Ensure image is replied to
   if (!messageReply || !messageReply.attachments || messageReply.attachments.length === 0) {
     return api.sendMessage("❌ Please reply to an image to apply the zombie effect.", threadID, messageID);
   }
@@ -26,11 +26,11 @@ module.exports.run = async ({ api, event }) => {
     return api.sendMessage("❌ The replied message must be a photo.", threadID, messageID);
   }
 
-  const imageUrl = attachment.url;
-  const apiUrl = `https://kaiz-apis.gleeze.com/api/zombie?url=${encodeURIComponent(imageUrl)}&apikey=APIKEY`;
+  const imageUrl = encodeURIComponent(attachment.url);
+  const apiUrl = `https://xvi-rest-api.vercel.app/api/zombie?imageUrl=${imageUrl}`;
 
   try {
-    api.sendMessage("🧟 Converting image to zombie style, please wait...", threadID, messageID);
+    api.sendMessage("🧟 Applying Zombie effect, please wait...", threadID, messageID);
 
     const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
 
@@ -38,12 +38,12 @@ module.exports.run = async ({ api, event }) => {
     fs.writeFileSync(tempPath, Buffer.from(response.data, "binary"));
 
     api.sendMessage({
-      body: "✅ Here is your zombie-style image:",
+      body: "✅ Zombie effect applied successfully!",
       attachment: fs.createReadStream(tempPath)
     }, threadID, () => fs.unlinkSync(tempPath), messageID);
 
   } catch (error) {
     console.error("Zombie Effect Error:", error.message);
-    api.sendMessage("❌ An error occurred while processing the image. Please try again later.", threadID, messageID);
+    api.sendMessage("❌ An error occurred while applying the effect. Please try again later.", threadID, messageID);
   }
 };
