@@ -1,41 +1,55 @@
 const axios = require("axios");
 
+const API_KEY = '4fe7e522-70b7-420b-a746-d7a23db49ee5';
+const BASE_URL = 'https://kaiz-apis.gleeze.com/api/openrouter';
+
 module.exports.config = {
   name: "ask",
   version: "1.0.0",
   role: 0,
-  credits: "vern",
-  description: "Ask a question and get an AI-powered answer using Ace API",
-  usage: "/ask <your question>",
-  prefix: true,
-  cooldowns: 3,
-  commandCategory: "AI"
+  hasPrefix: true,
+  aliases: ['ai', 'gemma', 'chat'],
+  usage: "ask [your question]",
+  description: "Ask an AI a question using Kaiz API (Gemma-2-9B)",
+  credits: "Vern",
+  cooldown: 4
 };
 
 module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID } = event;
+  const question = args.join(" ");
+  if (!question) return api.sendMessage("❓ Please ask a question.\n\nExample:\nask what is AI", event.threadID, event.messageID);
 
-  // Join all arguments as the input prompt
-  const query = args.join(" ");
-  if (!query) {
-    return api.sendMessage("❌ Please provide a question or prompt.\n\nExample:\n/ask What is the capital of France?", threadID, messageID);
-  }
-
-  const apiUrl = `https://ace-rest-api.onrender.com/api/openai?text=${encodeURIComponent(query)}`;
+  api.sendMessage(`💬 Thinking...\n🤖 Model: google/gemma-2-9b-it`, event.threadID, event.messageID);
 
   try {
-    const res = await axios.get(apiUrl);
-    const answer = res.data?.result;
+    const res = await axios.get(BASE_URL, {
+      params: {
+        ask: question,
+        model: "google/gemma-2-9b-it:free",
+        apikey: API_KEY
+      }
+    });
 
-    if (!answer) {
-      return api.sendMessage("⚠️ Failed to retrieve a response from the AI.", threadID, messageID);
+    const reply = res.data?.result;
+    if (!reply) {
+      return api.sendMessage("⚠️ No answer received from the AI.", event.threadID, event.messageID);
     }
 
-    const msg = `🤖 𝗔𝗜 𝗥𝗘𝗦𝗣𝗢𝗡𝗦𝗘:\n\n${answer}`;
-    return api.sendMessage(msg, threadID, messageID);
+    // Simulate more human-like response
+    const cleaned = reply
+      .replace(/\*\*/g, '') // remove bold if exists
+      .replace(/(?:\\n|\\r|\\t)/g, '\n') // ensure line breaks
+      .trim();
 
-  } catch (error) {
-    console.error("❌ AI Command Error:", error.message || error);
-    return api.sendMessage("🚫 Error retrieving AI response. Please try again later.", threadID, messageID);
+    // Send the AI's reply
+    api.sendMessage(`🧠 ${cleaned}`, event.threadID, event.messageID);
+
+  } catch (err) {
+    console.error("❌ AI error:", err.message);
+    return api.sendMessage(
+      `❌ Error while querying AI:\n${err.response?.data?.message || err.message}`,
+      event.threadID,
+      event.messageID
+    );
   }
 };
