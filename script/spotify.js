@@ -10,51 +10,47 @@ module.exports.config = {
   aliases: [],
   description: "Search and download Spotify track.",
   usage: "spotify [song name]",
-  credits: "Ryy",
+  credits: "Vern",
   cooldown: 5,
 };
 
 module.exports.run = async function ({ api, event, args }) {
-  const threadID = event.threadID;
-  const messageID = event.messageID;
-  const senderID = event.senderID;
+  const { threadID, messageID, senderID } = event;
 
   if (!args[0]) {
-    return api.sendMessage("❌ Please provide a search keyword.\n\nUsage: spotify [song name]", threadID, messageID);
+    return api.sendMessage("❌ Please provide a song name.\n\nUsage: spotify [song name]", threadID, messageID);
   }
 
   const keyword = encodeURIComponent(args.join(" "));
-  const searchURL = `https://api.ferdev.my.id/search/spotify?query=long%20live%20`;
+  const searchURL = `https://api.ferdev.my.id/search/spotify?query=${keyword}`;
 
-  await api.sendMessage("Traacking song please wait...", threadID, messageID);
+  api.sendMessage("🔎 Searching Spotify... Please wait.", threadID, messageID);
 
   try {
-    const searchRes = await axios.get(searchURL);
-    const track = searchRes.data[0];
+    const res = await axios.get(searchURL);
+    const track = res.data?.result;
 
-    if (!track || !track.trackUrl) {
-      return api.sendMessage("❌ No Spotify track found.", threadID, messageID);
+    if (!track || !track.url || !track.thumbnail) {
+      return api.sendMessage("❌ No track found or incomplete data.", threadID, messageID);
     }
 
-    const downloadURL = `https://api.ferdev.my.id/search/spotify?query=long%20live%20`;
-    const dlRes = await axios.get(downloadURL);
-    const { title, url, artist, thumbnail } = dlRes.data;
+    const { title, url, artist, thumbnail } = track;
 
     const imgPath = path.join(__dirname, "cache", `thumb_${senderID}.jpg`);
     const audioPath = path.join(__dirname, "cache", `audio_${senderID}.mp3`);
 
     const imgRes = await axios.get(thumbnail, { responseType: "arraybuffer" });
-    fs.writeFileSync(imgPath, imgRes.data);
+    fs.writeFileSync(imgPath, Buffer.from(imgRes.data));
 
     const audioRes = await axios.get(url, { responseType: "arraybuffer" });
-    fs.writeFileSync(audioPath, audioRes.data);
+    fs.writeFileSync(audioPath, Buffer.from(audioRes.data));
 
     api.sendMessage({
       body: `🎵 Title: ${title}\n👤 Artist: ${artist}`,
       attachment: fs.createReadStream(imgPath)
     }, threadID, () => {
       api.sendMessage({
-        body: "🎧 Here’s your Spotify track!",
+        body: "🎧 Here's your Spotify preview 🎶",
         attachment: fs.createReadStream(audioPath)
       }, threadID, () => {
         fs.unlinkSync(imgPath);
@@ -64,6 +60,6 @@ module.exports.run = async function ({ api, event, args }) {
 
   } catch (error) {
     console.error("Spotify command error:", error);
-    return api.sendMessage("❌ An error occurred while processing your request.", threadID, messageID);
+    return api.sendMessage("❌ Error while fetching Spotify track.", threadID, messageID);
   }
 };
