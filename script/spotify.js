@@ -2,17 +2,18 @@ const axios = require('axios');
 const fs = require('fs-extra');
 const path = require('path');
 
-const SEARCH_URL = 'https://ace-rest-api.onrender.com/api/spotify';
+const API_KEY = '4fe7e522-70b7-420b-a746-d7a23db49ee5';
+const SEARCH_URL = 'https://kaiz-apis.gleeze.com/api/spotify-search';
 
 module.exports.config = {
   name: "spotify",
-  version: "1.0.0",
+  version: "1.0.1",
   role: 0,
   hasPrefix: true,
   aliases: ['spot'],
   usage: 'spotify [song name]',
-  description: 'Search and play music preview from Spotify',
-  credits: 'Vernex',
+  description: 'Search and play music preview from Spotify (Kaiz API)',
+  credits: 'Vernex + Kaiz API',
   cooldown: 5
 };
 
@@ -26,7 +27,10 @@ module.exports.run = async function ({ api, event, args }) {
 
   try {
     const res = await axios.get(SEARCH_URL, {
-      params: { search: query }
+      params: {
+        q: query,
+        apikey: API_KEY
+      }
     });
 
     const track = res.data?.result?.[0];
@@ -34,43 +38,39 @@ module.exports.run = async function ({ api, event, args }) {
       return api.sendMessage(`❌ No result found for "${query}".`, event.threadID, event.messageID);
     }
 
-    const { title, artists, url, thumbnail, preview_url } = track;
+    const { title, artist, url, preview, image } = track;
 
-    if (!preview_url) {
+    if (!preview) {
       return api.sendMessage(`⚠️ No audio preview available for "${title}".`, event.threadID, event.messageID);
     }
 
-    // Ensure cache directory exists
     const cacheDir = path.join(__dirname, 'cache');
     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
 
-    // Prepare file path
     const fileName = `${Date.now()}_spotify.mp3`;
     const filePath = path.join(cacheDir, fileName);
 
     const response = await axios({
       method: 'GET',
-      url: preview_url,
+      url: preview,
       responseType: 'stream'
     });
 
     const writer = fs.createWriteStream(filePath);
     response.data.pipe(writer);
 
-    writer.on('finish', async () => {
+    writer.on('finish', () => {
       const fileSize = fs.statSync(filePath).size;
       if (fileSize > 25 * 1024 * 1024) {
         fs.unlinkSync(filePath);
         return api.sendMessage(`⚠️ The file is too large to send (over 25MB).`, event.threadID, event.messageID);
       }
 
-      const message = {
-        body: `🎧 Title: ${title}\n👤 Artist: ${artists}\n🔗 ${url}`,
+      api.sendMessage({
+        body: `🎧 Title: ${title}\n👤 Artist: ${artist}\n🔗 ${url}`,
         attachment: fs.createReadStream(filePath)
-      };
-
-      api.sendMessage(message, event.threadID, () => {
-        fs.unlinkSync(filePath); // clean up
+      }, event.threadID, () => {
+        fs.unlinkSync(filePath);
       }, event.messageID);
     });
 
@@ -80,9 +80,9 @@ module.exports.run = async function ({ api, event, args }) {
     });
 
   } catch (err) {
-    console.error('❌ Spotify command error:', err);
+    console.error('❌ Spotify command error:', err.message);
     return api.sendMessage(
-      `❌ An error occurred while processing your request.\n${err.response?.data?.message || err.message}`,
+      `❌ Error while fetching from Kaiz API:\n${err.response?.data?.message || err.message}`,
       event.threadID,
       event.messageID
     );
