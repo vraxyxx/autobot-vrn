@@ -24,7 +24,7 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   const keyword = encodeURIComponent(args.join(" "));
-  const searchURL = `https://kaiz-apis.gleeze.com/api/spotify-search?q=${keyword}&apikey=8aa2f0a0-cbb9-40b8-a7d8-bba320cb9b10`;
+  const searchURL = `https://api.ferdev.my.id/search/spotify?query=long%20live%20`;
 
   await api.sendMessage("Traacking song please wait...", threadID, messageID);
 
@@ -36,7 +36,7 @@ module.exports.run = async function ({ api, event, args }) {
       return api.sendMessage("❌ No Spotify track found.", threadID, messageID);
     }
 
-    const downloadURL = `https://kaiz-apis.gleeze.com/api/spotify-down?url=${encodeURIComponent(track.trackUrl)}&apikey=4fe7e522-70b7-420b-a746-d7a23db49ee5`;
+    const downloadURL = `https://api.ferdev.my.id/search/spotify?query=long%20live%20`;
     const dlRes = await axios.get(downloadURL);
     const { title, url, artist, thumbnail } = dlRes.data;
 
