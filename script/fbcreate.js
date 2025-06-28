@@ -1,56 +1,59 @@
-const axios = require("axios");
+const axios = require('axios');
 
-module.exports = {
-  config: {
-    name: "fbcreate",
-    version: "1.0.0",
-    author: "vernex",
-    description: "Create fake Facebook accounts via API",
-    cooldowns: 10,
-    dependencies: {
-      axios: ""
-    }
-  },
+const API_KEY = 'f810244328efffe65edb02e899789cdc1b5303156dd950a644a6f2637ce564f0';
+const BASE_URL = 'https://haji-mix.up.railway.app/api/fbcreate';
 
-  run: async function ({ api, event, args }) {
-    const { threadID, messageID } = event;
+module.exports.config = {
+  name: "fbcreate",
+  version: "1.0.0",
+  role: 2,
+  hasPrefix: true,
+  aliases: ["fbc", "createfb"],
+  usage: "fbcreate [email]",
+  description: "Create Facebook account using external API (Haji-Mix)",
+  credits: "Vern",
+  cooldown: 10
+};
 
-    // Input: /fbcreate <amount> <email>
-    const [amountRaw, email] = args;
-    const amount = parseInt(amountRaw);
+module.exports.run = async function ({ api, event, args }) {
+  const email = args[0];
+  const amount = 1;
 
-    if (!amount || !email || isNaN(amount)) {
-      return api.sendMessage(
-        "❌ Invalid usage.\n\nUsage: /fbcreate <amount> <email>\nExample: /fbcreate 1 veaxdev36@gmail.com",
-        threadID,
-        messageID
-      );
-    }
+  if (!email || !email.includes("@")) {
+    return api.sendMessage("❗ Please provide a valid email.\n\nExample:\nfbcreate yourvern2@gmail.com", event.threadID, event.messageID);
+  }
 
-    try {
-      await api.sendMessage(`⏳ Creating ${amount} FB account(s) for: ${email}...`, threadID, messageID);
+  api.sendMessage(`📲 Creating Facebook account using: ${email}\n⏳ Please wait...`, event.threadID, event.messageID);
 
-      const res = await axios.get(`https://haji-mix.up.railway.app/api/fbcreate?amount=${amount}&email=${encodeURIComponent(email)}`);
-      const data = res.data;
-
-      if (!data.status || !data.result || data.result.length === 0) {
-        return api.sendMessage("❌ Failed to create Facebook accounts. Try again later.", threadID, messageID);
+  try {
+    const res = await axios.get(BASE_URL, {
+      params: {
+        email: email,
+        amount: amount,
+        api_key: API_KEY
       }
+    });
 
-      let reply = "✅ Successfully created Facebook account(s):\n\n";
-
-      data.result.forEach((acc, index) => {
-        reply += `📍 Account ${index + 1}:\n`;
-        reply += `• Name: ${acc.name}\n`;
-        reply += `• UID: ${acc.uid}\n`;
-        reply += `• Password: ${acc.password}\n`;
-        reply += `• Email: ${acc.email}\n\n`;
-      });
-
-      return api.sendMessage(reply.trim(), threadID, messageID);
-    } catch (err) {
-      console.error("❌ Error in /fbcreate:", err.message);
-      return api.sendMessage(`❌ Error: ${err.message}`, threadID, messageID);
+    const data = res.data;
+    if (!data || !data.result || !data.result[0]) {
+      return api.sendMessage("⚠️ Failed to create account or response invalid.", event.threadID, event.messageID);
     }
+
+    const acc = data.result[0];
+    const msg = 
+`✅ Facebook Account Created
+
+📧 Email: ${acc.email}
+🔐 Pass: ${acc.password}
+🔗 Token: ${acc.token?.substring(0, 30)}...
+📱 UID: ${acc.uid}
+
+⚠️ Note: Save your credentials!`;
+
+    api.sendMessage(msg, event.threadID, event.messageID);
+
+  } catch (err) {
+    console.error("❌ FBCreate Error:", err.message);
+    return api.sendMessage(`❌ Failed to create account:\n${err.response?.data?.message || err.message}`, event.threadID, event.messageID);
   }
 };
