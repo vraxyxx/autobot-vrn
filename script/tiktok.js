@@ -1,51 +1,70 @@
-const axios = require("axios");
+const axios = require('axios');
+const fs = require('fs-extra');
+const path = require('path');
+
+const API_URL = 'https://rapido.zetsu.xyz/api/tk';
 
 module.exports.config = {
   name: "tiktok",
-  version: "1.0.1",
-  author: "vernex",
-  description: "Search and stream TikTok videos by keyword.",
-  prefix: true,
-  cooldowns: 5,
-  commandCategory: "video",
-  dependencies: {
-    axios: ""
-  }
+  version: "1.0.0",
+  role: 0,
+  hasPrefix: true,
+  aliases: ["tt", "tk"],
+  usage: "tiktok [keyword]",
+  description: "Fetch a TikTok video by search keyword",
+  credits: "Vern",
+  cooldown: 5
 };
 
 module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID } = event;
-
-  if (!args[0]) {
-    return api.sendMessage(
-      "📤 Usage:\n/tiktok [search keywords]\n\nExample:\n/tiktok capcut anime edits",
-      threadID,
-      messageID
-    );
+  const query = args.join(" ");
+  if (!query) {
+    return api.sendMessage("❓ What TikTok video are you looking for?\n\nExample:\ntiktok multo", event.threadID, event.messageID);
   }
 
-  const query = encodeURIComponent(args.join(" "));
-  const apiUrl = `https://haji-mix.up.railway.app/api/tiktok?search=${query}&limit=10&page=1&stream=true`;
+  // Inform user it is processing
+  api.sendMessage(`🔎 Searching TikTok for: "${query}"\n⏳ Please wait...`, event.threadID, event.messageID);
 
   try {
-    await api.sendMessage(`🔍 Searching TikTok for: ${args.join(" ")}\nPlease wait...`, threadID, messageID);
-
-    const res = await axios.get(apiUrl);
-    const { result } = res.data;
-
-    if (!result || !Array.isArray(result) || result.length === 0) {
-      return api.sendMessage("❌ No results found.", threadID, messageID);
-    }
-
-    let msg = `🎵 TikTok Results for "${args.join(" ")}"\n\n`;
-
-    result.forEach((item, index) => {
-      msg += `${index + 1}. ${item.title || "No Title"}\n🔗 ${item.url}\n\n`;
+    const res = await axios.get(API_URL, {
+      params: { search: query }
     });
 
-    return api.sendMessage(msg.trim(), threadID, messageID);
+    const data = res.data?.result;
+    if (!data || !data.video) {
+      return api.sendMessage("❌ No results found or video is unavailable.", event.threadID, event.messageID);
+    }
+
+    const videoUrl = data.video;
+    const desc = data.desc || "🎥 TikTok Video";
+
+    const filePath = path.join(__dirname, 'cache', `${Date.now()}_tiktok.mp4`);
+    const writer = fs.createWriteStream(filePath);
+
+    const response = await axios({
+      url: videoUrl,
+      method: 'GET',
+      responseType: 'stream'
+    });
+
+    response.data.pipe(writer);
+
+    writer.on('finish', () => {
+      const message = {
+        body: `🎬 ${desc}\n\n📥 From: TikTok\n🔍 Search: "${query}"`,
+        attachment: fs.createReadStream(filePath)
+      };
+
+      api.sendMessage(message, event.threadID, () => fs.unlinkSync(filePath), event.messageID);
+    });
+
+    writer.on('error', (err) => {
+      console.error("Write error:", err);
+      api.sendMessage("❌ Error downloading video.", event.threadID, event.messageID);
+    });
+
   } catch (err) {
-    console.error("❌ Error in /tiktok:", err.message);
-    return api.sendMessage("❌ An error occurred while fetching TikTok results.", threadID, messageID);
+    console.error("API Error:", err.message);
+    api.sendMessage("❌ Failed to fetch TikTok video. Try again later.", event.threadID, event.messageID);
   }
 };
