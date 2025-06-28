@@ -2,7 +2,7 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 
-const API_KEY = "4fe7e522-70b7-420b-a746-d7a23db49ee5";
+const API_KEY = "8aa2f0a0-cbb9-40b8-a7d8-bba320cb9b10";
 
 module.exports.config = {
   name: "spotify",
@@ -12,7 +12,7 @@ module.exports.config = {
   aliases: [],
   description: "Search and download Spotify track.",
   usage: "spotify [song name]",
-  credits: "Vern",
+  credits: "Ryy",
   cooldown: 5,
 };
 
@@ -26,23 +26,25 @@ module.exports.run = async function ({ api, event, args }) {
   const keyword = encodeURIComponent(args.join(" "));
   const searchURL = `https://kaiz-apis.gleeze.com/api/spotify-search?q=${keyword}&apikey=${API_KEY}`;
 
-  api.sendMessage("🎶 Searching Spotify... please wait.", threadID, messageID);
+  await api.sendMessage("🎶 Tracking your song... please wait.", threadID, messageID);
 
   try {
     const searchRes = await axios.get(searchURL);
     const track = searchRes.data?.result?.[0];
 
     if (!track || !track.trackUrl) {
-      return api.sendMessage("❌ No track found.", threadID, messageID);
+      return api.sendMessage("❌ No Spotify track found.", threadID, messageID);
     }
 
     const downloadURL = `https://kaiz-apis.gleeze.com/api/spotify-down?url=${encodeURIComponent(track.trackUrl)}&apikey=${API_KEY}`;
     const dlRes = await axios.get(downloadURL);
+    const { title, url, artist, thumbnail } = dlRes.data;
 
-    const { title, artist, thumbnail, audio } = dlRes.data || {};
-    if (!audio || !thumbnail) {
-      return api.sendMessage("⚠️ Failed to fetch track data.", threadID, messageID);
+    if (!url || !title || !artist || !thumbnail) {
+      return api.sendMessage("⚠️ Incomplete track data.", threadID, messageID);
     }
+
+    if (!fs.existsSync("cache")) fs.mkdirSync("cache");
 
     const imgPath = path.join(__dirname, "cache", `thumb_${senderID}.jpg`);
     const audioPath = path.join(__dirname, "cache", `audio_${senderID}.mp3`);
@@ -50,7 +52,7 @@ module.exports.run = async function ({ api, event, args }) {
     const imgRes = await axios.get(thumbnail, { responseType: "arraybuffer" });
     fs.writeFileSync(imgPath, Buffer.from(imgRes.data));
 
-    const audioRes = await axios.get(audio, { responseType: "arraybuffer" });
+    const audioRes = await axios.get(url, { responseType: "arraybuffer" });
     fs.writeFileSync(audioPath, Buffer.from(audioRes.data));
 
     api.sendMessage({
@@ -58,7 +60,7 @@ module.exports.run = async function ({ api, event, args }) {
       attachment: fs.createReadStream(imgPath)
     }, threadID, () => {
       api.sendMessage({
-        body: "🎧 Here’s your Spotify track preview. Enjoy! 🎶",
+        body: "🎧 Here’s your Spotify track!",
         attachment: fs.createReadStream(audioPath)
       }, threadID, () => {
         fs.unlinkSync(imgPath);
@@ -67,7 +69,7 @@ module.exports.run = async function ({ api, event, args }) {
     });
 
   } catch (error) {
-    console.error("Spotify command error:", error);
+    console.error("Spotify command error:", error.message || error);
     return api.sendMessage("❌ An error occurred while processing your request.", threadID, messageID);
   }
 };
