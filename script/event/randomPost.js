@@ -5,7 +5,7 @@ module.exports.config = {
   name: "randompost",
   version: "1.0.0",
   credits: "aminul & fixed by Vern",
-  description: "Auto greet and post motivation at scheduled times",
+  description: "autpost random post,and greet",
   dependencies: {
     "node-cron": "",
     "axios": ""
