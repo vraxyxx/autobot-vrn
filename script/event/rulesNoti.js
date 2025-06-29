@@ -1,5 +1,5 @@
 module.exports.config = {
-  name: "rules",
+  name: "rulesnoti",
   eventType: ["log:subscribe"],
   version: "1.0.1",
   credits: "Vern + ChatGPT Fixes",
