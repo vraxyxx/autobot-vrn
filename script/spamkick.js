@@ -1,48 +1,73 @@
-module.exports = {
-  config: {
-    name: "spamkick",
-    version: "1.0",
-    aliases: [],
-    author: "Vern",
-    countDown: 3,
-    role: 2, 
-    description: "Automatically kicks spammers from the group",
-    commandCategory: "moderation",
-    guide: "Automatically detects and kicks users who spam the chat",
-  },
+const fs = require("fs-extra");
 
-  onChat: async function ({ message, event, api, threadsData }) {
-    const chatId = event.chat.id;
-    const userId = event.from.id;
+module.exports.config = {
+  name: "spamkick",
+  version: "1.0.0",
+  hasPrefix: true,
+  role: 2,
+  credits: "Dipto | Modified by Vern",
+  description: "Auto kick spammers from the group.",
+  usage: "",
+  cooldown: 3
+};
 
-    const thread = await threadsData.get(chatId);
+// Cooldown and spam tracking map
+const spamTracker = new Map();
 
-    if (!thread.settings.spamDetection) {
-      thread.settings.spamDetection = {};
-    }
+module.exports.handleEvent = async function ({ api, event, Users, Threads }) {
+  const { threadID, senderID, body } = event;
+  if (!body || event.isGroup === false) return;
 
-    const currentTime = Date.now();
-    const userMessages = thread.settings.spamDetection[userId] || [];
+  try {
+    const threadData = await Threads.getData(threadID) || {};
+    const settings = threadData.data || {};
+    if (settings.spamKick === false) return;
 
-    userMessages.push(currentTime);
+    const now = Date.now();
+    const userKey = `${threadID}-${senderID}`;
+    const userHistory = spamTracker.get(userKey) || [];
 
-    const recentMessages = userMessages.filter(
-      (timestamp) => currentTime - timestamp < 10000
-    );
+    // Filter last 10 seconds
+    const recent = userHistory.filter(ts => now - ts < 10000);
+    recent.push(now);
+    spamTracker.set(userKey, recent);
 
-    thread.settings.spamDetection[userId] = recentMessages;
+    if (recent.length > 5) {
+      // Attempt kick
+      const userInfo = await Users.getInfo(senderID);
+      const name = userInfo.name || "User";
 
-    if (recentMessages.length > 5) {
       try {
-        await api.banChatMember(chatId, userId);
-        await message.reply(
-          `⚠️ User ${event.from.username || event.from.first_name} has been kicked for spamming.`
-        );
+        await api.removeUserFromGroup(senderID, threadID);
+        api.sendMessage(`⚠️ ${name} has been removed for spamming.`, threadID);
       } catch (err) {
-        console.error(`Failed to kick user ${userId}:`, err);
+        api.sendMessage(`❌ Failed to kick ${name}. Check bot's permissions.`, threadID);
+        console.error("Kick error:", err);
       }
-    }
 
-    await threadsData.set(chatId, thread);
-  },
+      spamTracker.delete(userKey);
+    }
+  } catch (err) {
+    console.error("SpamKick Error:", err);
+  }
+};
+
+module.exports.run = async function ({ api, event, Threads }) {
+  const { threadID } = event;
+
+  try {
+    const threadData = await Threads.getData(threadID);
+    const settings = threadData.data || {};
+
+    settings.spamKick = settings.spamKick === false ? true : false;
+    await Threads.setData(threadID, { data: settings });
+
+    return api.sendMessage(
+      `🛡️ Spam kick is now ${settings.spamKick ? "enabled" : "disabled"}.`,
+      threadID
+    );
+  } catch (err) {
+    console.error("Toggle error:", err);
+    return api.sendMessage("❌ Failed to toggle spamkick.", threadID);
+  }
 };
