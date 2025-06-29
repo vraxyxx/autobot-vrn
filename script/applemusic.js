@@ -24,7 +24,7 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   const query = encodeURIComponent(args.join(" "));
-  const searchURL = `https://kaiz-apis.gleeze.com/api/apple-music?search=${query}&apikey=APIKEY`;
+  const searchURL = `https://kaiz-apis.gleeze.com/api/apple-music?search=${query}&apikey=b5e85d38-1ccc-4aeb-84fd-a56a08e8361a`;
 
   await api.sendMessage("🔍 Searching Apple Music... Please wait.", threadID, messageID);
 
