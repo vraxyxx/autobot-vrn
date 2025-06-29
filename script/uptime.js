@@ -1,41 +1,53 @@
-const axios = require("axios");
+const os = require('os');
+const process = require('process');
+const { formatDuration } = require('date-fns'); 
 
-module.exports.config = {
-  name: "uptime",
-  version: "1.0.0",
-  role: 0,
-  credits: "vern",
-  description: "Check Vernx Bot uptime status",
-  usage: "/uptime",
-  prefix: true,
-  cooldowns: 3,
-  commandCategory: "System"
-};
+module.exports = {
+    config: {
+        name: "uptime",
+        aliases:["upt","up"],
+        author: "Vern",
+        description: "Get system and bot uptime information",
+        commandCategory: "utility",
+        usage: "uptime",
+        usePrefix: true,
+        role: 0,
+    },
+    onStart: async ({ message,usersData, threadsData }) => {
+        try {
+            const systemUptime = formatDuration({ hours: Math.floor(os.uptime() / 3600), minutes: Math.floor((os.uptime() % 3600) / 60), seconds: Math.floor(os.uptime() % 60) });
+            const processUptime = formatDuration({ hours: Math.floor(process.uptime() / 3600), minutes: Math.floor((process.uptime() % 3600) / 60), seconds: Math.floor(process.uptime() % 60) });
 
-module.exports.run = async function ({ api, event }) {
-  const { threadID, messageID } = event;
 
-  try {
-    // Send loading message
-    await api.sendMessage("🔄 Fetching uptime status... please wait...", threadID);
+            const systemInfo = {
+        os: os.type() + " " + os.release(),
+                cores: os.cpus().length,
+                architecture: os.arch(),
+                totalMemory: (os.totalmem() / (1024 ** 3)).toFixed(2) + " GB",
+                freeMemory: (os.freemem() / (1024 ** 3)).toFixed(2) + " GB",
+                ramUsage: ((os.totalmem() - os.freemem()) / (1024 ** 2)).toFixed(2) + " MB",
+            };
+            const totalUsers = await usersData.getAllUsers().then(users => users.length);
+            const totalThreads = await threadsData.getAllThreads().then(threads => threads.length);
 
-    const apiUrl = `https://ace-rest-api.onrender.com/api/uptime?instag=vrentut&ghub=vraxyxx&fb=https://www.facebook.com/profile.php?id=61576677958957%20Cochangco&hours=1&minutes=23&seconds=45&botname=xexi`;
+            const uptimeMessage = `
+╭──✦ [ Uptime Information ]
+├‣ 🕒 System Uptime: ${systemUptime}
+╰‣ ⏱ Process Uptime: ${processUptime}
 
-    const res = await axios.get(apiUrl);
-    const result = res?.data?.result;
-
-    if (!result) {
-      return api.sendMessage("❌ Unable to fetch uptime info.", threadID, messageID);
+╭──✦ [ System Information ]
+├‣ 📡 OS: ${systemInfo.os}
+├‣ 🛡 Cores: ${systemInfo.cores}
+├‣ 🔍 Architecture: ${systemInfo.architecture}
+├‣ 🖥 Node Version: ${process.version}
+├‣ 📈 Total Memory: ${systemInfo.totalMemory}
+├‣ 📉 Free Memory: ${systemInfo.freeMemory}
+├‣ 📊 RAM Usage: ${systemInfo.ramUsage}
+├‣ 👥 Total Users: ${totalUsers} members
+╰‣📂 Total Threads: ${totalThreads} Groups`;
+            await message.reply(uptimeMessage);
+        } catch (err) {
+            await message.reply(`❌ | Error occurred: ${err.message}`);
+        }
     }
-
-    const msg = `════『 𝗕𝗢𝗧 𝗨𝗣𝗧𝗜𝗠𝗘 』════\n\n🟢 Vernx Bot Status:\n${result}`;
-    return api.sendMessage(msg, threadID, messageID);
-
-  } catch (error) {
-    console.error("❌ Error in uptime command:", error.message || error);
-
-    const errorMsg = `════『 𝗨𝗣𝗧𝗜𝗠𝗘 𝗘𝗥𝗥𝗢𝗥 』════\n\n🚫 Failed to retrieve uptime info.\nReason: ${error.message || "Unknown error"}\n\n> Please try again later.`;
-
-    return api.sendMessage(errorMsg, threadID, messageID);
-  }
 };
