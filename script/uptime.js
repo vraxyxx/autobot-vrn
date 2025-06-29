@@ -1,18 +1,17 @@
-const os = require('os');
-const process = require('process');
-const { formatDuration } = require('date-fns');
+const os = require("os");
+const process = require("process");
+const { formatDuration } = require("date-fns");
 
 module.exports = {
   config: {
     name: "uptime",
-    aliases: ["upt", "up"],
     version: "1.0.0",
     credits: "Vern",
-    description: "Display bot and system uptime along with system stats",
+    description: "Shows system and bot uptime information",
     commandCategory: "utility",
     usage: "uptime",
-    role: 0,
-    hasPrefix: true
+    hasPrefix: true,
+    role: 0
   },
 
   onStart: async function ({ message, usersData, threadsData }) {
@@ -33,34 +32,32 @@ module.exports = {
         os: `${os.type()} ${os.release()}`,
         cores: os.cpus().length,
         architecture: os.arch(),
-        totalMemory: (os.totalmem() / (1024 ** 3)).toFixed(2) + " GB",
-        freeMemory: (os.freemem() / (1024 ** 3)).toFixed(2) + " GB",
-        ramUsage: ((os.totalmem() - os.freemem()) / (1024 ** 2)).toFixed(2) + " MB"
+        totalMemory: `${(os.totalmem() / (1024 ** 3)).toFixed(2)} GB`,
+        freeMemory: `${(os.freemem() / (1024 ** 3)).toFixed(2)} GB`,
+        ramUsage: `${((os.totalmem() - os.freemem()) / (1024 ** 2)).toFixed(2)} MB`
       };
 
       const totalUsers = await usersData.getAllUsers().then(u => u.length);
       const totalThreads = await threadsData.getAllThreads().then(t => t.length);
 
-      const uptimeMessage = `
-╭──✦ [ Uptime Information ]
-├‣ 🕒 System Uptime: ${systemUptime}
-╰‣ ⏱ Process Uptime: ${processUptime}
+      const msg = `
+╭── ✦ 𝑼𝒑𝒕𝒊𝒎𝒆 & 𝑺𝒚𝒔𝒕𝒆𝒎 𝑰𝒏𝒇𝒐 ✦ ──╮
+├ 🕒 System Uptime: ${systemUptime}
+├ ⏱ Bot Uptime: ${processUptime}
+├ 📡 OS: ${systemInfo.os}
+├ 🛡 CPU Cores: ${systemInfo.cores}
+├ 🔍 Architecture: ${systemInfo.architecture}
+├ 🖥 Node.js: ${process.version}
+├ 📈 Total RAM: ${systemInfo.totalMemory}
+├ 📉 Free RAM: ${systemInfo.freeMemory}
+├ 📊 RAM Usage: ${systemInfo.ramUsage}
+├ 👥 Users Tracked: ${totalUsers}
+╰ 📂 Threads Active: ${totalThreads}`;
 
-╭──✦ [ System Information ]
-├‣ 📡 OS: ${systemInfo.os}
-├‣ 🛡 Cores: ${systemInfo.cores}
-├‣ 🔍 Architecture: ${systemInfo.architecture}
-├‣ 🖥 Node Version: ${process.version}
-├‣ 📈 Total Memory: ${systemInfo.totalMemory}
-├‣ 📉 Free Memory: ${systemInfo.freeMemory}
-├‣ 📊 RAM Usage: ${systemInfo.ramUsage}
-├‣ 👥 Total Users: ${totalUsers} members
-╰‣ 📂 Total Threads: ${totalThreads} Groups`;
-
-      await message.reply(uptimeMessage);
+      await message.reply(msg);
     } catch (err) {
       console.error("[uptime.js] Error:", err);
-      await message.reply(`❌ | An error occurred while fetching uptime: ${err.message}`);
+      await message.reply(`❌ | Failed to fetch uptime: ${err.message}`);
     }
   }
 };
