@@ -2,7 +2,7 @@ const cron = require('node-cron');
 const axios = require('axios');
 
 module.exports.config = {
-  name: "automaticpost",
+  name: "automatic",
   version: "1.0.0",
   credits: "aminul & fixed by Vern",
   description: "Auto greet and post motivation at scheduled times",
