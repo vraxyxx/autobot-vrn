@@ -26,7 +26,7 @@ module.exports.run = async function ({ api, event, args }) {
       params: {
         ask: question,
         model: "google/gemma-2-9b-it:free",
-        apikey: API_KEY
+        apikey: b5e85d38-1ccc-4aeb-84fd-a56a08e8361a
       }
     });
 
