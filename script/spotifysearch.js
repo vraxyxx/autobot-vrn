@@ -29,7 +29,7 @@ module.exports.run = async function ({ api, event, args }) {
     const loadingMsg = `🎧 Searching Spotify for: "${query}"...\nPlease wait...`;
     await api.sendMessage(loadingMsg, threadID, messageID);
 
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/spotify-search?q=${encodeURIComponent(query)}&apikey=4fe7e522-70b7-420b-a746-d7a23db49ee5`;
+    const apiUrl = `https://kaiz-apis.gleeze.com/api/spotify-search?q=${encodeURIComponent(query)}&apikey=b5e85d38-1ccc-4aeb-84fd-a56a08e8361a`;
     const { data } = await axios.get(apiUrl);
 
     if (!data?.result?.length) {
