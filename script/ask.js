@@ -1,6 +1,6 @@
 const axios = require("axios");
 
-const API_KEY = '4fe7e522-70b7-420b-a746-d7a23db49ee5';
+const API_KEY = 'b5e85d38-1ccc-4aeb-84fd-a56a08e8361a';
 const BASE_URL = 'https://kaiz-apis.gleeze.com/api/openrouter';
 
 module.exports.config = {
@@ -26,7 +26,7 @@ module.exports.run = async function ({ api, event, args }) {
       params: {
         ask: question,
         model: "google/gemma-2-9b-it:free",
-        apikey: b5e85d38-1ccc-4aeb-84fd-a56a08e8361a
+        apikey: API_KEY
       }
     });
 
