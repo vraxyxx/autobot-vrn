@@ -1,73 +1,60 @@
-const fs = require("fs-extra");
-
 module.exports.config = {
   name: "spamkick",
   version: "1.0.0",
-  hasPrefix: true,
-  role: 2,
-  credits: "Dipto | Modified by Vern",
-  description: "Auto kick spammers from the group.",
-  usage: "",
-  cooldown: 3
+  hasPermssion: 0, 
+  credits: "Vern",
+  usePrefix: true,
+  prefix: false,
+  description: { en:"Automatically kick a user who spams messages in a group chat"},
+  category: "group",
+  usage: { en:"[on/off] or [settings]"},
+  cooldowns: 5
 };
+module.exports.handleEvent = async ({ api, event, Users }) => {
+  const { senderID, threadID } = event;
+  if (!global.antispam) global.antispam = new Map();
 
-// Cooldown and spam tracking map
-const spamTracker = new Map();
+  const threadInfo = global.antispam.has(threadID) ? global.antispam.get(threadID) : { users: {} };
+  if (!(senderID in threadInfo.users)) {
+    threadInfo.users[senderID] = { count: 1, time: Date.now() };
+  } else {
+    threadInfo.users[senderID].count++;
+    const timePassed = Date.now() - threadInfo.users[senderID].time;
+    const messages = threadInfo.users[senderID].count;
+    const timeLimit = 8000;
+    const messageLimit = 5; //Limit of message
 
-module.exports.handleEvent = async function ({ api, event, Users, Threads }) {
-  const { threadID, senderID, body } = event;
-  if (!body || event.isGroup === false) return;
-
-  try {
-    const threadData = await Threads.getData(threadID) || {};
-    const settings = threadData.data || {};
-    if (settings.spamKick === false) return;
-
-    const now = Date.now();
-    const userKey = `${threadID}-${senderID}`;
-    const userHistory = spamTracker.get(userKey) || [];
-
-    // Filter last 10 seconds
-    const recent = userHistory.filter(ts => now - ts < 10000);
-    recent.push(now);
-    spamTracker.set(userKey, recent);
-
-    if (recent.length > 5) {
-      // Attempt kick
-      const userInfo = await Users.getInfo(senderID);
-      const name = userInfo.name || "User";
-
-      try {
-        await api.removeUserFromGroup(senderID, threadID);
-        api.sendMessage(`⚠️ ${name} has been removed for spamming.`, threadID);
-      } catch (err) {
-        api.sendMessage(`❌ Failed to kick ${name}. Check bot's permissions.`, threadID);
-        console.error("Kick error:", err);
-      }
-
-      spamTracker.delete(userKey);
+    if (messages > messageLimit && timePassed < timeLimit) {
+      api.removeUserFromGroup(senderID, threadID, async (err) => {
+        if (err) {
+        api.sendMessage(`${err.message}`, event.threadID)} else {
+          api.sendMessage({body: `  বেয়াদবির কারনে কিক খাইলো😂😂\n\n NAME: ${await Users.getName(senderID)} \n UID: ${senderID}`}, threadID);
+        }
+      });
+      threadInfo.users[senderID] = { count: 1, time: Date.now() };
+    } else if (timePassed > timeLimit) {
+      threadInfo.users[senderID] = { count: 1, time: Date.now() };
     }
-  } catch (err) {
-    console.error("SpamKick Error:", err);
   }
+
+  global.antispam.set(threadID, threadInfo);
 };
 
-module.exports.run = async function ({ api, event, Threads }) {
-  const { threadID } = event;
-
-  try {
-    const threadData = await Threads.getData(threadID);
-    const settings = threadData.data || {};
-
-    settings.spamKick = settings.spamKick === false ? true : false;
-    await Threads.setData(threadID, { data: settings });
-
-    return api.sendMessage(
-      `🛡️ Spam kick is now ${settings.spamKick ? "enabled" : "disabled"}.`,
-      threadID
-    );
-  } catch (err) {
-    console.error("Toggle error:", err);
-    return api.sendMessage("❌ Failed to toggle spamkick.", threadID);
-  }
-};
+module.exports.run = async ({ api, event, args, client, __GLOBAL }) => {
+  switch (args[0]) {
+      case "on":
+        if (!global.antispam) global.antispam = new Map();
+        global.antispam.set(event.threadID, { users: {} });
+        api.sendMessage("Spam kick has been turned on for this Group.", event.threadID,event.messageID);
+        break;
+      case "off":
+        if (global.antispam && global.antispam.has(event.threadID)) {
+          global.antispam.delete(event.threadID);
+          api.sendMessage("Spam kick has been turned off for this group", event.threadID,event.messageID);
+        } else {
+          api.sendMessage("Spam kick is not active on this groupevent.threadID,event.messageID);        }
+        break;
+      default:
+        api.sendMessage("Please use 'on' to activate or 'off' to deactivate the Spam kick.", event.threadID,event.messageID);
+    }
+  };
