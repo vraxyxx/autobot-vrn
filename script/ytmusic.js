@@ -4,7 +4,7 @@ const path = require('path');
 
 const SEARCH_URL = 'https://kaiz-apis.gleeze.com/api/ytsearch';
 const DOWNLOAD_URL = 'https://kaiz-apis.gleeze.com/api/ytmp3-v2';
-const API_KEY = 'APIKEY MO BOI';
+const API_KEY = 'b5e85d38-1ccc-4aeb-84fd-a56a08e8361a';
 
 module.exports.config = {
   name: "ytmusic",
