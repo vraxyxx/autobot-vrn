@@ -1,12 +1,7 @@
 module.exports.config = {
   name: "ping",
   version: "1.0.0",
-  role: 0,
-  hasPrefix: false,
-  credits: "Vern",
   description: "Responds with pong"
-  usages: "ping",
-  cooldown: 5,
 };
 
 module.exports.run = async function({ api, event }) {
