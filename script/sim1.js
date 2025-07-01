@@ -12,10 +12,10 @@ if (fs.existsSync(ENABLED_FILE)) {
 
 // 🧠 Fetch reply from Simsimi API
 async function fetchReply(text) {
-  const apiKey = "UbPsGRJsUjZaX24-lutlbORQSo5xMjY0Rk-tEmOO";
+  const apiKey = "2a5a2264d2ee4f0b847cb8bd809ed34bc3309be7";
   if (!text.trim()) return "🤖 You didn't send anything!";
   try {
-    const res = await axios.get(`https://api.simsimi.vn/v1/simtalk/sim`, {
+    const res = await axios.get(`https://simsimi.ooguy.com/sim?query=${encodeURIComponent(query)}&apikey=${apiKey}`, {
       params: { query: text, apikey: apiKey }
     });
     if (res.data?.message) return res.data.message;
