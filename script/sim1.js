@@ -1,99 +1,87 @@
-const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
+const axios = require("axios");
 
-// ✅ Path to the JSON file that stores enabled thread IDs
 const ENABLED_FILE = path.join(__dirname, "../data/simsimi-enabled.json");
+const MODE_FILE = path.join(__dirname, "../data/simsimi-mode.json");
+
 let enabledThreads = [];
+let modeData = {};
 
-// ✅ Ensure the data folder exists to avoid file errors
 fs.ensureDirSync(path.dirname(ENABLED_FILE));
+fs.ensureFileSync(MODE_FILE);
 
-// ✅ Load enabled threads if the file exists
 if (fs.existsSync(ENABLED_FILE)) {
-  try {
-    enabledThreads = fs.readJSONSync(ENABLED_FILE);
-  } catch (e) {
-    console.error("❌ Failed to read enabledThreads file:", e);
-    enabledThreads = [];
-  }
+  try { enabledThreads = fs.readJSONSync(ENABLED_FILE); } catch { enabledThreads = []; }
 }
 
-// 🧠 Function to fetch Simsimi reply
-async function fetchReply(text) {
-  const apiKey = "3f722ddc86104152a7f6c9aa951e6136b94cf0fd"; // ✅ Your working API key
-  if (!text.trim()) return "🤖 You didn't send anything!";
+try { modeData = fs.readJSONSync(MODE_FILE); } catch { modeData = {}; }
+
+async function fetchReply(text, mode = "normal") {
+  const apiKey = "3f722ddc86104152a7f6c9aa951e6136b94cf0fd";
   try {
     const res = await axios.get("https://simsimi.ooguy.com/sim", {
-      params: { query: text, apikey: apiKey },
-      timeout: 5000,
+      params: {
+        query: text,
+        apikey: apiKey,
+        mode: mode === "angry" ? "rude" : "default"
+      }
     });
-
     if (res.data?.message) return res.data.message;
     if (res.data?.error) return `⚠️ Simsimi says: ${res.data.error}`;
     return "🤖 I didn't get that.";
   } catch (err) {
-    console.error("❌ Simsimi API error:", err.response?.data || err.message);
-    return "🚫 Couldn't connect to Simsimi.";
+    console.error("❌ Simsimi error:", err.response?.data || err.message);
+    return "🚫 Simsimi failed to reply.";
   }
 }
 
 module.exports.config = {
   name: "sim1",
-  version: "1.0.0",
-  description: "Chat with Simsimi AI (auto-reply & manual)",
-  usage: "sim1 [on|off|text]",
-  credits: "Vern",
-  cooldown: 5,
+  version: "1.1",
   role: 0,
-  hasPrefix: true,
+  credits: "Vern",
+  description: "Chat with Simsimi AI (manual + auto + rude mode)",
+  usage: "sim1 [on|off|angry|normal|text]",
+  cooldown: 5,
 };
 
-// 📩 Auto-reply event
-module.exports.handleEvent = async ({ api, event }) => {
-  const { threadID, senderID, body } = event;
-  if (!enabledThreads.includes(threadID)) return;
-  if (!body || senderID === api.getCurrentUserID()) return;
-
-  const reply = await fetchReply(body);
-  return api.sendMessage(reply, threadID);
-};
-
-// 💬 Command handler
 module.exports.run = async ({ api, event, args }) => {
   const { threadID, messageID } = event;
   const send = (msg) => api.sendMessage(msg, threadID, messageID);
 
-  if (!args.length) {
-    return send("ℹ️ Use `sim1 on`, `sim1 off`, or `sim1 [text]`");
-  }
+  if (!args.length) return send("ℹ️ Use: sim1 on | off | angry | normal | [text]");
 
   const cmd = args[0].toLowerCase();
 
   if (cmd === "on") {
     if (enabledThreads.includes(threadID)) return send("✅ Already enabled.");
     enabledThreads.push(threadID);
-    try {
-      fs.writeJSONSync(ENABLED_FILE, enabledThreads, { spaces: 2 });
-    } catch (e) {
-      console.error("❌ Failed to save enabledThreads:", e);
-    }
+    fs.writeJSONSync(ENABLED_FILE, enabledThreads, { spaces: 2 });
     return send("🟢 Simsimi auto-reply enabled!");
   }
 
   if (cmd === "off") {
     if (!enabledThreads.includes(threadID)) return send("✅ Already disabled.");
     enabledThreads = enabledThreads.filter(id => id !== threadID);
-    try {
-      fs.writeJSONSync(ENABLED_FILE, enabledThreads, { spaces: 2 });
-    } catch (e) {
-      console.error("❌ Failed to save enabledThreads:", e);
-    }
+    fs.writeJSONSync(ENABLED_FILE, enabledThreads, { spaces: 2 });
     return send("🔴 Simsimi auto-reply disabled.");
   }
 
-  // Manual reply
+  if (cmd === "angry") {
+    modeData[threadID] = "angry";
+    fs.writeJSONSync(MODE_FILE, modeData, { spaces: 2 });
+    return send("😡 Angry mode activated! Simsimi will now be rude.");
+  }
+
+  if (cmd === "normal") {
+    modeData[threadID] = "normal";
+    fs.writeJSONSync(MODE_FILE, modeData, { spaces: 2 });
+    return send("🙂 Back to normal mode.");
+  }
+
   const query = args.join(" ");
-  const answer = await fetchReply(query);
-  return send(answer);
+  const mode = modeData[threadID] || "normal";
+  const reply = await fetchReply(query, mode);
+  return send(reply);
 };
