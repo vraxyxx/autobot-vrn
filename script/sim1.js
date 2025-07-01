@@ -15,9 +15,10 @@ async function fetchReply(text) {
   const apiKey = "2a5a2264d2ee4f0b847cb8bd809ed34bc3309be7";
   if (!text.trim()) return "🤖 You didn't send anything!";
   try {
-    const res = await axios.get(`https://simsimi.ooguy.com/sim?query=${encodeURIComponent(query)}&apikey=${apiKey}`, {
+    const res = await axios.get("https://simsimi.ooguy.com/sim", {
       params: { query: text, apikey: apiKey }
     });
+
     if (res.data?.message) return res.data.message;
     if (res.data?.error) return `⚠️ Simsimi says: ${res.data.error}`;
     return "🤖 I didn't get that.";
