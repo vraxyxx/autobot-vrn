@@ -5,7 +5,7 @@ module.exports.config = {
   hasPrefix: false,
   credits: "Vern",
   description: "Responds with pong"
-  usage: "ping",
+  usage: "/ping",
   cooldown: 5,
 };
 
