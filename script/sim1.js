@@ -3,7 +3,7 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "sim1",
-    version: "4.3.8",
+    version: "1.0.0",
     aliases: ["simsimi"],
     description: "Chat with Simsimi AI (via ooguy.com API)",
     commandCategory: "chat",
