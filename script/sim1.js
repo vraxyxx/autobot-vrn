@@ -2,28 +2,38 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
+// ✅ Path to the JSON file that stores enabled thread IDs
 const ENABLED_FILE = path.join(__dirname, "../data/simsimi-enabled.json");
 let enabledThreads = [];
 
-// Load enabled threads if file exists
+// ✅ Ensure the data folder exists to avoid file errors
+fs.ensureDirSync(path.dirname(ENABLED_FILE));
+
+// ✅ Load enabled threads if the file exists
 if (fs.existsSync(ENABLED_FILE)) {
-  enabledThreads = fs.readJSONSync(ENABLED_FILE);
+  try {
+    enabledThreads = fs.readJSONSync(ENABLED_FILE);
+  } catch (e) {
+    console.error("❌ Failed to read enabledThreads file:", e);
+    enabledThreads = [];
+  }
 }
 
-// 🧠 Fetch reply from Simsimi API
+// 🧠 Function to fetch Simsimi reply
 async function fetchReply(text) {
-  const apiKey = "2a5a2264d2ee4f0b847cb8bd809ed34bc3309be7";
+  const apiKey = "3f722ddc86104152a7f6c9aa951e6136b94cf0fd"; // ✅ Your working API key
   if (!text.trim()) return "🤖 You didn't send anything!";
   try {
     const res = await axios.get("https://simsimi.ooguy.com/sim", {
-      params: { query: text, apikey: apiKey }
+      params: { query: text, apikey: apiKey },
+      timeout: 5000,
     });
 
     if (res.data?.message) return res.data.message;
     if (res.data?.error) return `⚠️ Simsimi says: ${res.data.error}`;
     return "🤖 I didn't get that.";
   } catch (err) {
-    console.error("Simsimi API error:", err.response?.data || err.message);
+    console.error("❌ Simsimi API error:", err.response?.data || err.message);
     return "🚫 Couldn't connect to Simsimi.";
   }
 }
@@ -39,6 +49,7 @@ module.exports.config = {
   hasPrefix: true,
 };
 
+// 📩 Auto-reply event
 module.exports.handleEvent = async ({ api, event }) => {
   const { threadID, senderID, body } = event;
   if (!enabledThreads.includes(threadID)) return;
@@ -48,6 +59,7 @@ module.exports.handleEvent = async ({ api, event }) => {
   return api.sendMessage(reply, threadID);
 };
 
+// 💬 Command handler
 module.exports.run = async ({ api, event, args }) => {
   const { threadID, messageID } = event;
   const send = (msg) => api.sendMessage(msg, threadID, messageID);
@@ -55,19 +67,28 @@ module.exports.run = async ({ api, event, args }) => {
   if (!args.length) {
     return send("ℹ️ Use `sim1 on`, `sim1 off`, or `sim1 [text]`");
   }
+
   const cmd = args[0].toLowerCase();
 
   if (cmd === "on") {
     if (enabledThreads.includes(threadID)) return send("✅ Already enabled.");
     enabledThreads.push(threadID);
-    fs.writeJSONSync(ENABLED_FILE, enabledThreads, { spaces: 2 });
+    try {
+      fs.writeJSONSync(ENABLED_FILE, enabledThreads, { spaces: 2 });
+    } catch (e) {
+      console.error("❌ Failed to save enabledThreads:", e);
+    }
     return send("🟢 Simsimi auto-reply enabled!");
   }
 
   if (cmd === "off") {
     if (!enabledThreads.includes(threadID)) return send("✅ Already disabled.");
     enabledThreads = enabledThreads.filter(id => id !== threadID);
-    fs.writeJSONSync(ENABLED_FILE, enabledThreads, { spaces: 2 });
+    try {
+      fs.writeJSONSync(ENABLED_FILE, enabledThreads, { spaces: 2 });
+    } catch (e) {
+      console.error("❌ Failed to save enabledThreads:", e);
+    }
     return send("🔴 Simsimi auto-reply disabled.");
   }
 
