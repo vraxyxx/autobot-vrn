@@ -5,7 +5,7 @@ module.exports = {
     name: "sim1",
     version: "1.0.0",
     aliases: ["simsimi"],
-    description: "Chat with Simsimi AI (via ooguy.com API)",
+    description: "Chat with Simsimi AI",
     commandCategory: "chat",
     role: 0,
     hasPrefix: false,
