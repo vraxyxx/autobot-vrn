@@ -2,7 +2,7 @@ const axios = require("axios");
 const cron = require("node-cron");
 
 module.exports.config = {
-  name: "randomFact",
+  name: "randomfact",
   version: "1.0.0",
   description: "Automatically posts a random dog fact every 20 minutes to the timeline",
   credits: "Vern",
