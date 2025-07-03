@@ -26,7 +26,7 @@ module.exports.handleEvent = async function ({ api, event }) {
     const memberCount = threadInfo.participantIDs.length;
 
     const avatarUrl = `https://graph.facebook.com/${userID}/picture?width=512&height=512`;
-    const background = threadInfo.imageSrc || "https://i.ibb.co/4YBNyvP/images-76.jpg";
+    const background = threadInfo.imageSrc || "https://i.imgur.com/KC6vjne.jpeg";
 
     // Ace welcome API
     const apiUrl = `https://ace-rest-api.onrender.com/api/welcome` +
