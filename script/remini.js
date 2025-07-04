@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 const axios = require('axios');
 
@@ -9,31 +9,51 @@ module.exports.config = {
   credits: "Vern",
   description: "Enhance image using Remini API",
   commandCategory: "tools",
-  usages: "[ reply a photo ]",
-  cooldowns: 0,
+  usages: "[reply a photo]",
+  cooldowns: 0
 };
 
-module.exports.run = async function ({ api, event, args }) {
+module.exports.run = async function ({ api, event }) {
   const messageReply = event.messageReply;
 
-  if (!messageReply || !messageReply.attachments || messageReply.attachments.length === 0 || messageReply.attachments[0].type !== "photo") {
-    return api.sendMessage("Please reply to a photo to use this command.", event.threadID, event.messageID);
+  if (
+    !messageReply ||
+    !messageReply.attachments ||
+    messageReply.attachments.length === 0 ||
+    messageReply.attachments[0].type !== "photo"
+  ) {
+    return api.sendMessage("📷 Please reply to a photo to enhance it using Remini.", event.threadID, event.messageID);
   }
 
-  const photoUrl = messageReply.attachments[0].url;
+  const inputUrl = messageReply.attachments[0].url;
+  const API_KEY = "0ff49fce-1537-4798-9d90-69db487be671";
+  const apiUrl = `https://kaiz-apis.gleeze.com/api/remini?input=${encodeURIComponent(inputUrl)}&apikey=${API_KEY}`;
 
   try {
-    const response = await axios.get(`https://0f7723e0-abf0-46c4-9c17-a40a166dc99c-00-20552yypoemja.sisko.replit.dev/api/remini?input=${encodeURIComponent(photoUrl)}`, { responseType: "arraybuffer"});
-    const img = response.data;
+    const res = await axios.get(apiUrl, { responseType: "arraybuffer" });
+    const enhancedImg = res.data;
 
+    const cacheDir = path.join(__dirname, "cache");
+    await fs.ensureDir(cacheDir); // Make sure cache folder exists
 
-    const photoPath = path.join(__dirname, 'cache', 'enhanced.jpg');
+    const filePath = path.join(cacheDir, `enhanced_${Date.now()}.jpg`);
+    await fs.writeFile(filePath, enhancedImg);
 
-    fs.writeFileSync(photoPath, Buffer.from(img), 'binary');
+    api.sendMessage(
+      {
+        body: "✅ Image enhanced successfully!",
+        attachment: fs.createReadStream(filePath)
+      },
+      event.threadID,
+      async () => {
+        // Clean up file after sending
+        await fs.unlink(filePath);
+      },
+      event.messageID
+    );
 
-    api.sendMessage({ body: "✨ Image Enhance successfully", attachment: fs.createReadStream(photoPath) }, event.threadID, event.messageID);
   } catch (error) {
-    console.error("Error calling Remini API:", error);
-    api.sendMessage(`An error occurred while processing the image. Please try again later.\n${error}`, event.threadID, event.messageID);
+    console.error("❌ Remini API error:", error.response?.data || error.message);
+    return api.sendMessage("🚫 Failed to enhance the image. Please try again later.", event.threadID, event.messageID);
   }
 };
