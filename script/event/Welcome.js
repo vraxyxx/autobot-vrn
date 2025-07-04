@@ -1,56 +1,45 @@
-const axios = require("axios");
-const fs = require("fs-extra");
-const path = require("path");
+const axios = require('axios');
+const fs = require('fs');
 
 module.exports.config = {
-  name: "welcomenoti",
-  version: "1.0.0"
+    name: "welcome",
+    version: "1.0.0",
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
-  if (event.logMessageType !== "log:subscribe") return;
+    if (event.logMessageType === "log:subscribe") {
+        const addedParticipants = event.logMessageData.addedParticipants;
+        const senderID = addedParticipants[0].userFbId;
+        let name = await api.getUserInfo(senderID).then(info => info[senderID].name);
 
-  try {
-    const newUser = event.logMessageData.addedParticipants?.[0];
-    if (!newUser) return;
+        // Truncate name if it's too long
+        const maxLength = 15;
+        if (name.length > maxLength) {
+            name = name.substring(0, maxLength - 3) + '...';
+        }
 
-    const userID = newUser.userFbId;
-    const userInfo = await api.getUserInfo(userID);
-    let name = userInfo[userID]?.name || "User";
+        const groupInfo = await api.getThreadInfo(event.threadID);
+        const groupIcon = groupInfo.imageSrc || "https://i.ibb.co/G5mJZxs/rin.jpg";
+        const memberCount = groupInfo.participantIDs.length;
+        const groupName = groupInfo.threadName || "this group";
+        const background = groupInfo.imageSrc || "https://i.ibb.co/4YBNyvP/images-76.jpg";
 
-    // Truncate long names
-    if (name.length > 15) name = name.slice(0, 12) + "...";
+        const url = `https://mademoiselle-rrest-apis-rr28.onrender.com/api/welcome?username=${encodeURIComponent(name)}&avatarUrl=https://api-canvass.vercel.app/profile?uid=${senderID}&groupname=${encodeURIComponent(groupName)}&bg=${encodeURIComponent(background)}&memberCount=${memberCount}`;
 
-    const threadInfo = await api.getThreadInfo(event.threadID);
-    const groupName = threadInfo.threadName || "this group";
-    const memberCount = threadInfo.participantIDs.length;
+        try {
+            const { data } = await axios.get(url, { responseType: 'arraybuffer' });
+            const filePath = './script/cache/welcome_image.jpg';
+            fs.writeFileSync(filePath, Buffer.from(data));
 
-    const avatarUrl = `https://graph.facebook.com/${userID}/picture?width=512&height=512`;
-    const background = threadInfo.imageSrc || "https://i.imgur.com/KC6vjne.jpeg";
-
-    // Ace welcome API
-    const apiUrl = `https://ace-rest-api.onrender.com/api/welcome` +
-      `?username=${encodeURIComponent(name)}` +
-      `&avatarUrl=${encodeURIComponent(avatarUrl)}` +
-      `&groupname=${encodeURIComponent(groupName)}` +
-      `&bg=${encodeURIComponent(background)}` +
-      `&memberCount=${memberCount}`;
-
-    const res = await axios.get(apiUrl, { responseType: "arraybuffer" });
-
-    const imgPath = path.join(__dirname, "..", "cache", `welcome-${userID}.jpg`);
-    fs.ensureDirSync(path.dirname(imgPath));
-    fs.writeFileSync(imgPath, Buffer.from(res.data));
-
-    await api.sendMessage({
-      body: `🎉 Welcome ${name} to ${groupName}!`,
-      attachment: fs.createReadStream(imgPath)
-    }, event.threadID);
-
-    fs.unlinkSync(imgPath);
-
-  } catch (error) {
-    console.error("❌ Error in welcomenoti:", error.message || error);
-    api.sendMessage("⚠️ A user joined, but the welcome image failed to load.", event.threadID);
-  }
+            api.sendMessage({
+                body: `Everyone welcome the new member ${name} to ${groupName}!`,
+                attachment: fs.createReadStream(filePath)
+            }, event.threadID, () => fs.unlinkSync(filePath));
+        } catch (error) {
+            console.error("Error fetching welcome image:", error);
+            api.sendMessage({
+                body: `Everyone welcome the new member ${name} to ${groupName}!`
+            }, event.threadID);
+        }
+    }
 };
