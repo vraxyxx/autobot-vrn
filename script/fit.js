@@ -37,7 +37,7 @@ module.exports.run = async function({ api, event, args, Users }) {
       mentions.push({ id: mentionID, tag: name });
     }
 
-    const fit = "🫶🫶🫶🫶🫶".repeat(3);
+    const kisses = "🫶🫶🫶🫶🫶".repeat(3);
     const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
 
     const filePath = path.join(__dirname, "cache", `kiss.gif`);
