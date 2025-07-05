@@ -37,7 +37,7 @@ module.exports.run = async function({ api, event, args, Users }) {
       mentions.push({ id: mentionID, tag: name });
     }
 
-    const kisses = "😘😗😙😚💋💕💖".repeat(3);
+    const fit = "🫶🫶🫶🫶🫶".repeat(3);
     const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
 
     const filePath = path.join(__dirname, "cache", `kiss.gif`);
@@ -45,7 +45,7 @@ module.exports.run = async function({ api, event, args, Users }) {
     fs.writeFileSync(filePath, Buffer.from(response.data, "binary"));
 
     const message = {
-      body: `${mentionText}Sending you lots of kisses! ${kisses}`,
+      body: `${mentionText}♎ Here's your random faith gif! ${kisses}`,
       attachment: fs.createReadStream(filePath),
       mentions
     };
