@@ -26,7 +26,7 @@ module.exports.run = async function ({ api, event }) {
       return api.sendMessage("❌ No pickup line found. Try again later.", threadID, messageID);
     }
 
-    const msg = `💘 𝗥𝗔𝗡𝗗𝗢𝗠 𝗣𝗜𝗖𝗞𝗨𝗣 𝗟𝗜𝗡𝗘\n\n"${pickup}"\n\n— 😍 ${author}`;
+    const msg = `⚙️ 𝗥𝗔𝗡𝗗𝗢𝗠 𝗣𝗜𝗖𝗞𝗨𝗣 𝗟𝗜𝗡𝗘\n\n"${pickup}"\n\n— 🫡 ${author}`;
     return api.sendMessage(msg, threadID, messageID);
   } catch (error) {
     console.error("📛 [pickupline.js] API Error:", error.message || error);
