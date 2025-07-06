@@ -6,7 +6,7 @@ module.exports.config = {
   name: "remini",
   version: "1.0.0",
   role: 0,
-  credits: "Vern",
+  credits: 'Vern',
   aliases: [],
   usages: "< reply to image >",
   cooldown: 5,
@@ -26,7 +26,7 @@ module.exports.run = async ({ api, event }) => {
   }
 
   const imageUrl = encodeURIComponent(attachment.url);
-  const apiKey = 'ANG_SARAP_MO_FAITH;
+  const apiKey = '0ff49fce-1537-4798-9d90-69db487be671;
   const apiUrl = `https://kaiz-apis.gleeze.com/api/remini?url=${imageUrl}&stream=true&apikey=${apiKey}`;
 
   try {
