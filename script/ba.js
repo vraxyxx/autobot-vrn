@@ -5,7 +5,7 @@ module.exports = {
     name: "ba",
     version: "1.0.0",
     aliases: ["baquote", "balinesay"],
-    description: "Send a random Filipino 'BA' quote.",
+    description: "Send a random Filipino 'BA' image.",
     usage: "ba",
     commandCategory: "fun",
     role: 0,
