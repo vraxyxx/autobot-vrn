@@ -1,43 +1,56 @@
 const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 
-module.exports.config = {
-  name: "cdp",
-  version: "1.0.0",
-  role: 0,
-  hasPrefix: true,
-  aliases: ["capcut", "capcuttemp"],
-  description: "Get a random CapCut Template",
-  usage: "cdp",
-  credits: "Vern",
-  cooldown: 3
-};
+module.exports = {
+  config: {
+    name: "cdp",
+    version: "1.0.0",
+    hasPermission: 0,
+    credits: "Vern",
+    description: "Fetch 2 random CDP images from the API.",
+    commandCategory: "image",
+    usages: "cdp",
+    cooldowns: 5,
+    role: 0,
+    hasPrefix: true
+  },
 
-module.exports.run = async function ({ api, event }) {
-  const { threadID, messageID } = event;
+  run: async function ({ api, event }) {
+    const { threadID, messageID } = event;
+    const msgLoading = "⏳ Fetching 2 CDP images...";
 
-  try {
-    // Send loading message
-    await api.sendMessage("🔄 Fetching a random CapCut template...", threadID, messageID);
+    try {
+      api.sendMessage(msgLoading, threadID, async () => {
+        const res = await axios.get("https://xvi-rest-api.vercel.app/api/cdp");
+        const { one, two } = res.data?.result || {};
 
-    const res = await axios.get("https://ace-rest-api.onrender.com/api/cdp");
-    const data = res.data?.result || res.data;
+        if (!one || !two) {
+          return api.sendMessage("❌ Failed to fetch CDP images.", threadID, messageID);
+        }
 
-    if (!data || !data.title || !data.url) {
-      return api.sendMessage("⚠️ Failed to fetch CapCut template. Try again later.", threadID, messageID);
+        const img1 = (await axios.get(one, { responseType: "arraybuffer" })).data;
+        const img2 = (await axios.get(two, { responseType: "arraybuffer" })).data;
+
+        const path1 = path.join(__dirname, "cache", `cdp1_${Date.now()}.jpg`);
+        const path2 = path.join(__dirname, "cache", `cdp2_${Date.now()}.jpg`);
+        await fs.outputFile(path1, img1);
+        await fs.outputFile(path2, img2);
+
+        return api.sendMessage({
+          body: "🖼 CDP Images",
+          attachment: [
+            fs.createReadStream(path1),
+            fs.createReadStream(path2)
+          ]
+        }, threadID, () => {
+          fs.unlinkSync(path1);
+          fs.unlinkSync(path2);
+        }, messageID);
+      });
+    } catch (error) {
+      console.error("[cdp.js] Error:", error.message || error);
+      return api.sendMessage("🚫 Error fetching CDP images. Please try again later.", threadID, messageID);
     }
-
-    let msg = `🎬 𝗖𝗮𝗽𝗖𝘂𝘁 𝗧𝗲𝗺𝗽𝗹𝗮𝘁𝗲\n\n`;
-    msg += `📌 Title: ${data.title}\n`;
-    if (data.author) msg += `👤 Author: ${data.author}\n`;
-    if (data.views) msg += `👁️ Views: ${data.views}\n`;
-    if (data.likes) msg += `❤️ Likes: ${data.likes}\n`;
-    msg += `🔗 Link: ${data.url}`;
-    if (data.preview) msg += `\n🖼️ Preview: ${data.preview}`;
-
-    return api.sendMessage(msg, threadID, messageID);
-
-  } catch (err) {
-    console.error("❌ CDP error:", err.message || err);
-    return api.sendMessage("❌ Error fetching CapCut template. Please try again later.", threadID, messageID);
   }
 };
