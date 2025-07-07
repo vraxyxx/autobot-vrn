@@ -5,8 +5,33 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: -1; /* Behind all content */
-  background-color: #1a001a; /* dark purple fallback background */
+  z-index: -1;
+  background-color: #0d0d0d; /* darker matrix background */
+}
+
+/* Glowing matrix effect */
+#matrix::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 255, 0, 0.1) 0px,
+    rgba(0, 255, 0, 0.05) 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  animation: flicker 0.2s infinite;
+  mix-blend-mode: overlay;
+}
+
+/* Flicker for matrix glow */
+@keyframes flicker {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.05; }
 }
 
 /* Make sure container is above the matrix background */
@@ -23,6 +48,7 @@ body {
   background-color: black;
   color: #f2e6ff;
   font-family: 'Poppins', sans-serif;
+  text-shadow: 0 0 5px #00ffcc, 0 0 10px #00ffcc; /* glowing font */
 }
 
 .header {
@@ -44,7 +70,8 @@ body {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  border: 3px solid blue;
+  border: 3px solid #00ffff;
+  box-shadow: 0 0 10px #00ffff;
 }
 
 .profile-container {
@@ -53,7 +80,7 @@ body {
 }
 
 .profile-name {
-  color: #ADD8E6;
+  color: #00ffff;
   font-size: 1.5rem;
   font-weight: 600;
   display: flex;
@@ -65,12 +92,11 @@ body {
 
 .verified-icon {
   margin-left: 5px;
-  color: #ADD8E6;
- /* light purple */
+  color: #00ffff;
 }
 
 .github-link {
-  color: #E0FFFF;
+  color: #00ffcc;
   text-decoration: none;
   font-size: 0.9rem;
   display: inline-block;
@@ -97,16 +123,23 @@ body {
 }
 
 .btn {
-  background-color: #F4E1C1; /* purple */
+  background-color: #F4E1C1;
   border: none;
   padding: 10px 20px;
-  color: white;
+  color: black;
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
   animation: textFloat 1s ease-out forwards;
   opacity: 0;
   animation-delay: 1.3s;
+  box-shadow: 0 0 10px #ffcc99;
+  transition: 0.3s ease;
+}
+
+.btn:hover {
+  background-color: #ffd9b3;
+  box-shadow: 0 0 20px #ffcc99;
 }
 
 .btn-secondary {
@@ -124,9 +157,10 @@ input {
   padding: 10px;
   border-radius: 8px;
   border: none;
-  background-color: #2b0033;
-  color: #fff;
+  background-color: #1a1a1a;
+  color: #00ffcc;
   resize: none;
+  box-shadow: 0 0 5px #00ffcc;
 }
 
 .subtitle {
@@ -136,12 +170,13 @@ input {
   animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
   opacity: 0;
   animation-delay: 0.7s;
+  color: #00ffcc;
 }
 
 .terms {
   font-size: 0.9rem;
   margin-top: 1rem;
-  color: #c499ff;
+  color: #cc99ff;
   animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
   opacity: 0;
   animation-delay: 0.9s;
@@ -155,6 +190,8 @@ input {
   animation: textFloat 1s ease-out forwards;
   opacity: 0;
   animation-delay: 1.3s;
+  box-shadow: 0 0 10px #9933ff;
+  color: white;
 }
 
 .footer {
