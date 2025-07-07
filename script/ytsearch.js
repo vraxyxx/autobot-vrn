@@ -1,76 +1,53 @@
-const axios = require('axios');
+const axios = require("axios");
 
 module.exports.config = {
   name: "ytsearch",
   version: "1.0.0",
+  aliases: ["yts", "ytfind"],
+  description: "Search YouTube videos by keyword.",
+  usage: "ytsearch <query>",
+  commandCategory: "media",
   role: 0,
-  credits: "vern",
-  description: "Search YouTube videos using the Kaiz API.",
-  usage: "/ytsearch <search query>",
-  prefix: true,
-  cooldowns: 3,
-  commandCategory: "Utility"
+  hasPrefix: true,
+  credits: "Vern",
+  cooldown: 3
 };
 
-module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID } = event;
-  const query = args.join(' ').trim();
-  const prefix = "/"; // Change if your bot uses a dynamic prefix
+module.exports.onStart = async function ({ api, event, args }) {
+  const { threadID, messageID, senderID } = event;
+  const query = args.join(" ");
 
-  // No search query provided
   if (!query) {
-    const usageMessage = `════『 𝗬𝗧𝗦𝗘𝗔𝗥𝗖𝗛 』════\n\n` +
-      `⚠️ Please provide a search term for YouTube videos.\n\n` +
-      `📌 Usage: ${prefix}ytsearch <search query>\n` +
-      `💬 Example: ${prefix}ytsearch about you\n\n` +
-      `> Thank you for using YouTube Search!`;
-
-    return api.sendMessage(usageMessage, threadID, messageID);
+    return api.sendMessage("🔍 Please provide a search query.\n\nExample: ytsearch night changes", threadID, messageID);
   }
 
-  try {
-    // Send loading message first
-    const waitMsg = `════『 𝗬𝗧𝗦𝗘𝗔𝗥𝗖𝗛 』════\n\n` +
-      `🔎 Searching YouTube for: "${query}"\nPlease wait a moment...`;
-    await api.sendMessage(waitMsg, threadID, messageID);
+  api.sendMessage(`🔎 Searching YouTube for: "${query}"...`, threadID, async (err, info) => {
+    if (err) return;
 
-    // Call the YouTube Search API
-    const apiUrl = "https://kaiz-apis.gleeze.com/api/ytsearch";
-    const response = await axios.get(apiUrl, {
-      params: {
-        q: query,
-        apikey: "b5e85d38-1ccc-4aeb-84fd-a56a08e8361a"
+    try {
+      const res = await axios.get(`https://urangkapolka.vercel.app/api/ytsearch?query=${encodeURIComponent(query)}`);
+      const results = res.data?.data;
+
+      if (!Array.isArray(results) || results.length === 0) {
+        return api.editMessage("❌ No results found.", info.messageID);
       }
-    });
 
-    const data = response.data?.result || response.data?.data || response.data;
-    let resultMsg = `════『 𝗬𝗧𝗦𝗘𝗔𝗥𝗖𝗛 』════\n\n`;
+      const list = results.slice(0, 5).map((video, i) => {
+        return `🎬 ${i + 1}. ${video.title}\n📺 Views: ${video.views}\n⏱ Duration: ${video.duration}\n🔗 ${video.url}\n`;
+      }).join("\n");
 
-    if (Array.isArray(data) && data.length > 0) {
-      data.slice(0, 5).forEach((video, idx) => {
-        resultMsg += `#${idx + 1}\n`;
-        if (video.title) resultMsg += `• Title: ${video.title}\n`;
-        if (video.url) resultMsg += `• URL: ${video.url}\n`;
-        if (video.duration) resultMsg += `• Duration: ${video.duration}\n`;
-        if (video.channel) resultMsg += `• Channel: ${video.channel}\n`;
-        if (video.views) resultMsg += `• Views: ${video.views}\n`;
-        resultMsg += `\n`;
+      api.getUserInfo(senderID, (err, userInfo) => {
+        const userName = userInfo?.[senderID]?.name || "User";
+        const timestamp = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+
+        const msg = `🔍 𝗬𝗢𝗨𝗧𝗨𝗕𝗘 𝗦𝗘𝗔𝗥𝗖𝗛\n━━━━━━━━━━━━━━━━━━\n${list}\n━━━━━━━━━━━━━━━━━━\n🔎 𝗤𝘂𝗲𝗿𝘆: ${query}\n👤 𝗨𝘀𝗲𝗿: ${userName}\n🕒 𝗧𝗶𝗺𝗲: ${timestamp}`;
+
+        return api.editMessage(msg, info.messageID);
       });
-    } else {
-      resultMsg += "⚠️ No results found.";
+
+    } catch (e) {
+      console.error("[ytsearch.js] Error:", e.message || e);
+      return api.editMessage("⚠️ Error fetching results. Please try again later.", info.messageID);
     }
-
-    resultMsg += `> Powered by Kaiz YouTube Search API`;
-
-    return api.sendMessage(resultMsg, threadID, messageID);
-
-  } catch (error) {
-    console.error('❌ Error in ytsearch command:', error.message || error);
-
-    const errorMessage = `════『 𝗬𝗧𝗦𝗘𝗔𝗥𝗖𝗛 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
-      `🚫 Failed to search YouTube.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
-      `> Please try again later.`;
-
-    return api.sendMessage(errorMessage, threadID, messageID);
-  }
+  });
 };
