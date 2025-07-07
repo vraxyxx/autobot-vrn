@@ -1,44 +1,37 @@
-const axios = require('axios');
+const axios = require("axios");
 
-module.exports.config = {
-  name: 'recipe',
-  version: '1.0.0',
-  role: 0,
-  hasPrefix: false,
-  aliases: [],
-  description: 'Get a detailed recipe based on the ingredient you provide.',
-  usage: 'recipe <ingredient>',
-  credits: 'developer',
-  cooldown: 3,
-};
+module.exports = {
+  config: {
+    name: "recipe",
+    version: "1.0.0",
+    aliases: ["cook", "foodie"],
+    description: "Get a random recipe with ingredients and instructions.",
+    usage: "recipe",
+    commandCategory: "fun",
+    role: 0,
+    hasPrefix: true,
+    credits: "Vern",
+    cooldown: 3
+  },
 
-module.exports.run = async function({ api, event, args }) {
-  const threadID = event.threadID;
-  const messageID = event.messageID;
-
-  if (!args || args.length === 0) {
-    return api.sendMessage('Please provide an ingredient.\nUsage: recipe <ingredient>', threadID, messageID);
-  }
-
-  const ingredient = args.join(' ');
-  api.sendMessage(`Searching recipe for “${ingredient}”, please wait...`, threadID, async (err, info) => {
-    if (err) return;
-
-    const apiUrl = `https://kaiz-apis.gleeze.com/api/recipe?ingredients=${encodeURIComponent(ingredient)}&apikey=APIKEY`;
+  onStart: async function ({ api, event }) {
+    const { threadID, messageID } = event;
 
     try {
-      const res = await axios.get(apiUrl);
-      const data = res.data;
+      const res = await axios.get("https://rapido.zetsu.xyz/api/recipe");
+      const { name, category, ingredients, instructions } = res.data;
 
-      if (!data?.recipe) {
-        return api.editMessage('No recipe found for that ingredient.', info.messageID);
-      }
+      const ingredientList = ingredients.map((i) => `• ${i}`).join("\n");
+      const previewInstructions = instructions.length > 2000
+        ? instructions.slice(0, 2000) + "..."
+        : instructions;
 
-      return api.editMessage(data.recipe, info.messageID);
+      const message = `🍽️ 𝗥𝗘𝗖𝗜𝗣𝗘 𝗧𝗜𝗠𝗘\n\n👨‍🍳 𝗡𝗮𝗺𝗲: ${name}\n📂 𝗖𝗮𝘁𝗲𝗴𝗼𝗿𝘆: ${category}\n\n🥬 𝗜𝗻𝗴𝗿𝗲𝗱𝗶𝗲𝗻𝘁𝘀:\n${ingredientList}\n\n📋 𝗜𝗻𝘀𝘁𝗿𝘂𝗰𝘁𝗶𝗼𝗻𝘀:\n${previewInstructions}`;
 
-    } catch (error) {
-      console.error('Recipe API Error:', error.message);
-      return api.editMessage('Error: Failed to fetch recipe. Try again later.', info.messageID);
+      return api.sendMessage(message, threadID, messageID);
+    } catch (err) {
+      console.error("[recipe.js] API Error:", err.message || err);
+      return api.sendMessage("❌ Couldn't fetch a recipe at the moment. Please try again later.", threadID, messageID);
     }
-  });
+  }
 };
