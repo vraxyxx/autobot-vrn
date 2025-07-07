@@ -53,7 +53,7 @@ body {
 }
 
 .profile-name {
-  color: #00FFFF;
+  color: #ADD8E6;
   font-size: 1.5rem;
   font-weight: 600;
   display: flex;
@@ -65,12 +65,12 @@ body {
 
 .verified-icon {
   margin-left: 5px;
-  color: #0000CD;
+  color: #ADD8E6;
  /* light purple */
 }
 
 .github-link {
-  color: #d98aff;
+  color: #E0FFFF;
   text-decoration: none;
   font-size: 0.9rem;
   display: inline-block;
