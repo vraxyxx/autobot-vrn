@@ -1,63 +1,41 @@
-const os = require("os");
-const process = require("process");
-const { formatDuration } = require("date-fns");
+const axios = require("axios");
 
 module.exports = {
   config: {
     name: "uptime",
-    version: "1.0.0",
-    credits: "Vern",
-    description: "Shows system and bot uptime information",
-    commandCategory: "utility",
-    usage: "uptime",
-    hasPrefix: true,
-    role: 0
+    aliases: ["botuptime", "status"],
+    version: "1.0",
+    author: "Vern",
+    countDown: 5,
+    role: 0,
+    shortDescription: "Get bot uptime and social links",
+    longDescription: "Shows how long the bot has been running with links",
+    category: "info",
+    guide: {
+      en: "{pn}"
+    }
   },
 
-  onStart: async function ({ message, usersData, threadsData }) {
+  onStart: async function ({ message }) {
     try {
-      const systemUptime = formatDuration({
-        hours: Math.floor(os.uptime() / 3600),
-        minutes: Math.floor((os.uptime() % 3600) / 60),
-        seconds: Math.floor(os.uptime() % 60)
-      });
+      const res = await axios.get(`https://urangkapolka.vercel.app/api/uptime?instag=vern&ghub=vernesg&fb=https%3A%2F%2Fwww.facebook.com%2Fprofile.php%3Fid%3D61576677958957&hours=24+hours&minutes=60+minutes&seconds=60+seconds&botname=vernx`);
+      const data = res.data.result;
 
-      const processUptime = formatDuration({
-        hours: Math.floor(process.uptime() / 3600),
-        minutes: Math.floor((process.uptime() % 3600) / 60),
-        seconds: Math.floor(process.uptime() % 60)
-      });
+      const reply = `🟢 𝗕𝗼𝘁 𝗨𝗽𝘁𝗶𝗺𝗲 𝗥𝗲𝗽𝗼𝗿𝘁
 
-      const systemInfo = {
-        os: `${os.type()} ${os.release()}`,
-        cores: os.cpus().length,
-        architecture: os.arch(),
-        totalMemory: `${(os.totalmem() / (1024 ** 3)).toFixed(2)} GB`,
-        freeMemory: `${(os.freemem() / (1024 ** 3)).toFixed(2)} GB`,
-        ramUsage: `${((os.totalmem() - os.freemem()) / (1024 ** 2)).toFixed(2)} MB`
-      };
+🤖 𝗕𝗼𝘁 𝗡𝗮𝗺𝗲: ${data.bot_name}
+⏱️ 𝗨𝗽𝘁𝗶𝗺𝗲: ${data.uptime}
+📆 𝗧𝗶𝗺𝗲𝘀𝘁𝗮𝗺𝗽: ${new Date(data.timestamp).toLocaleString("en-PH", { timeZone: "Asia/Manila" })}
 
-      const totalUsers = await usersData.getAllUsers().then(u => u.length);
-      const totalThreads = await threadsData.getAllThreads().then(t => t.length);
+🌐 𝗦𝗼𝗰𝗶𝗮𝗹 𝗟𝗶𝗻𝗸𝘀:
+📘 Facebook: ${data.social_links.facebook}
+📸 Instagram: https://instagram.com/${data.social_links.instagram || "vern"}
+💻 GitHub: https://github.com/${data.social_links.github || "vernesg"}`;
 
-      const msg = `
-╭── ✦ 𝑼𝒑𝒕𝒊𝒎𝒆 & 𝑺𝒚𝒔𝒕𝒆𝒎 𝑰𝒏𝒇𝒐 ✦ ──╮
-├ 🕒 System Uptime: ${systemUptime}
-├ ⏱ Bot Uptime: ${processUptime}
-├ 📡 OS: ${systemInfo.os}
-├ 🛡 CPU Cores: ${systemInfo.cores}
-├ 🔍 Architecture: ${systemInfo.architecture}
-├ 🖥 Node.js: ${process.version}
-├ 📈 Total RAM: ${systemInfo.totalMemory}
-├ 📉 Free RAM: ${systemInfo.freeMemory}
-├ 📊 RAM Usage: ${systemInfo.ramUsage}
-├ 👥 Users Tracked: ${totalUsers}
-╰ 📂 Threads Active: ${totalThreads}`;
-
-      await message.reply(msg);
+      message.reply(reply);
     } catch (err) {
-      console.error("[uptime.js] Error:", err);
-      await message.reply(`❌ | Failed to fetch uptime: ${err.message}`);
+      console.error("Error fetching uptime data:", err);
+      message.reply("❌ Failed to fetch uptime data. Try again later.");
     }
   }
 };
