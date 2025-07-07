@@ -53,6 +53,7 @@ body {
 }
 
 .profile-name {
+  color: #d98aff;
   font-size: 1.5rem;
   font-weight: 600;
   display: flex;
