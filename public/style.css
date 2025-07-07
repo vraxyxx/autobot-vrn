@@ -6,7 +6,7 @@
   width: 100vw;
   height: 100vh;
   z-index: -1; /* Behind all content */
-  background-color: #1a001a; /* dark purple fallback background */
+  background-color: #0c0f11; /* near-black for matrix backdrop */
 }
 
 /* Make sure container is above the matrix background */
@@ -14,15 +14,15 @@
   position: relative;
   padding: 2rem;
   z-index: 1;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(12, 18, 16, 0.7);
   border-radius: 12px;
-  box-shadow: 0 0 20px #00ffcc;
+  box-shadow: 0 0 8px rgba(0, 255, 170, 0.2);
 }
 
 body {
   margin: 0;
-  background-color: #1a001a;
-  color: #00ffcc;
+  background-color: #0c0f11;
+  color: #8effc1;
   font-family: 'Segoe UI', monospace;
 }
 
@@ -30,14 +30,14 @@ body {
   position: relative;
   text-align: center;
   padding-bottom: 1rem;
-  text-shadow: 0 0 10px #00ffcc;
+  text-shadow: 0 0 3px #2bf8c5;
 }
 
 .banner {
   width: 100%;
   height: 200px;
   object-fit: cover;
-  filter: brightness(0.7);
+  filter: brightness(0.6);
 }
 
 .profile-pic {
@@ -47,8 +47,7 @@ body {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  border: 3px solid #00ffcc;
-  box-shadow: 0 0 10px #00ffcc;
+  border: 2px solid #22d88d;
 }
 
 .profile-container {
@@ -64,17 +63,16 @@ body {
   animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
   opacity: 0;
   animation-delay: 0.1s;
-  color: #00ffcc;
-  text-shadow: 0 0 5px #00ffcc;
+  color: #a0ffd3;
 }
 
 .verified-icon {
   margin-left: 5px;
-  color: #00ffcc;
+  color: #22ffaa;
 }
 
 .github-link {
-  color: #00ffcc;
+  color: #77e6cb;
   text-decoration: none;
   font-size: 0.9rem;
   display: inline-block;
@@ -85,7 +83,7 @@ body {
 }
 
 .warning {
-  color: #00ffaa;
+  color: #b2ffdd;
   font-size: 0.9rem;
   max-width: 90%;
   animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
@@ -101,23 +99,22 @@ body {
 }
 
 .btn {
-  background-color: #00ffcc;
+  background-color: #33cc99;
   border: none;
   padding: 10px 20px;
-  color: #1a001a;
+  color: #0c0f11;
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
   animation: textFloat 1s ease-out forwards;
   opacity: 0;
   animation-delay: 1.3s;
-  box-shadow: 0 0 10px #00ffcc;
 }
 
 .btn-secondary {
-  background-color: #1a001a;
-  color: #00ffcc;
-  border: 1px solid #00ffcc;
+  background-color: #18221c;
+  color: #33cc99;
+  border: 1px solid #33cc99;
   animation: textFloat 1s ease-out forwards;
   opacity: 0;
   animation-delay: 1.3s;
@@ -130,16 +127,15 @@ input {
   padding: 10px;
   border-radius: 8px;
   border: none;
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #00ffcc;
+  background-color: #1e2a24;
+  color: #b8ffe2;
   resize: none;
   outline: none;
-  box-shadow: 0 0 10px #00ffcc inset;
 }
 
 textarea:focus,
 input:focus {
-  box-shadow: 0 0 12px #00ffcc;
+  border: 1px solid #33cc99;
 }
 
 .subtitle {
@@ -149,35 +145,34 @@ input:focus {
   animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
   opacity: 0;
   animation-delay: 0.7s;
-  color: #00ffcc;
+  color: #8dfcd8;
 }
 
 .terms {
   font-size: 0.9rem;
   margin-top: 1rem;
-  color: #00ffaa;
+  color: #a6fdd6;
   animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
   opacity: 0;
   animation-delay: 0.9s;
 }
 
 .submit-btn {
-  background-color: #00ffcc;
+  background-color: #22d88d;
   padding: 10px 30px;
   font-weight: bold;
   margin-top: 1rem;
   animation: textFloat 1s ease-out forwards;
   opacity: 0;
   animation-delay: 1.3s;
-  color: #1a001a;
+  color: #0c0f11;
   border-radius: 8px;
-  box-shadow: 0 0 10px #00ffcc;
 }
 
 .footer {
   text-align: center;
   padding: 1rem;
-  color: #00ffcc;
+  color: #6bfac9;
   font-size: 0.85rem;
   animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
   opacity: 0;
