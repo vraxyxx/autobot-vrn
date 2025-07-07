@@ -30,7 +30,7 @@ module.exports = {
         return api.sendMessage("❌ No repositories found for this query.", threadID, messageID);
       }
 
-      let msg = `🔍 𝗚𝗶𝘁𝗛𝘂𝗯 𝗥𝗲𝗽𝗼𝘀 𝗳𝗼𝗿 "${query}":\n\n`;
+      let msg = `🔍 𝗚𝗶𝘁𝗛𝘂𝗯 𝗥𝗲𝗽𝗼𝘀 𝗳𝗼𝗿 \"${query}\":\n\n`;
       results.slice(0, 5).forEach((repo, i) => {
         msg += `${i + 1}. 📁 ${repo.name}\n🔗 ${repo.url}\n⭐ Stars: ${repo.stars} | 🍴 Forks: ${repo.forks}\n\n`;
       });
