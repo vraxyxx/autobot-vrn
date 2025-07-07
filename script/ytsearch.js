@@ -1,52 +1,56 @@
 const axios = require("axios");
 
-module.exports = {
-  config: {
-    name: "ytsearch",
-    version: "1.0.0",
-    aliases: ["yts", "ytfind"],
-    description: "Search YouTube videos by keyword.",
-    usage: "ytsearch <query>",
-    commandCategory: "media",
-    role: 0,
-    hasPrefix: true,
-    credits: "Vern",
-    cooldown: 3
-  },
+module.exports.config = {
+  name: "ytsearch",
+  version: "1.0.0",
+  role: 0,
+  hasPrefix: false,
+  aliases: ["yts", "ytfind"],
+  description: "Search YouTube videos by keyword.",
+  usage: "ytsearch <query>",
+  credits: "Vern",
+  cooldown: 3,
+};
 
-  onStart: async function ({ api, event, args }) {
-    const { threadID, messageID, senderID } = event;
-    const query = args.join(" ");
+module.exports.run = async function ({ api, event, args }) {
+  const query = args.join(" ").trim();
+  const senderID = event.senderID;
+  const threadID = event.threadID;
+  const messageID = event.messageID;
 
-    if (!query) {
-      return api.sendMessage("🔍 Please provide a YouTube search query.\n\nExample: ytsearch night changes", threadID, messageID);
-    }
+  if (!query) {
+    return api.sendMessage("❌ Please provide a YouTube search keyword.\n\nExample: ytsearch night changes", threadID, messageID);
+  }
+
+  api.sendMessage("🔎 Searching YouTube for videos...", threadID, async (err, info) => {
+    if (err) return;
 
     try {
       const res = await axios.get(`https://urangkapolka.vercel.app/api/ytsearch?query=${encodeURIComponent(query)}`);
       const results = res.data?.data;
 
       if (!Array.isArray(results) || results.length === 0) {
-        return api.sendMessage("❌ No results found for your query.", threadID, messageID);
+        return api.editMessage("❌ No results found for that keyword.", info.messageID);
       }
 
-      let text = `🎬 𝗧𝗢𝗣 𝗬𝗧 𝗥𝗘𝗦𝗨𝗟𝗧𝗦\n\n`;
-
-      results.slice(0, 5).forEach((item, i) => {
-        text += `${i + 1}. 📺 ${item.title}\n🔗 ${item.url}\n⏱ Duration: ${item.duration} | 👁️ ${item.views}\n\n`;
+      let msg = `🎬 𝗬𝗢𝗨𝗧𝗨𝗕𝗘 𝗥𝗘𝗦𝗨𝗟𝗧𝗦\n━━━━━━━━━━━━━━━━━━\n`;
+      results.slice(0, 5).forEach((vid, i) => {
+        msg += `${i + 1}. 🎵 ${vid.title}\n⏱ ${vid.duration} | 👁️ ${vid.views}\n🔗 ${vid.url}\n\n`;
       });
 
-      api.getUserInfo(senderID, (err, info) => {
-        const userName = info?.[senderID]?.name || "Unknown User";
+      // Optional: Get user's name
+      api.getUserInfo(senderID, (err, infoUser) => {
+        const userName = infoUser?.[senderID]?.name || "Unknown User";
         const timePH = new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" });
 
-        text += `━━━━━━━━━━━━━━━━━━\n🔎 𝗤𝘂𝗲𝗿𝘆: ${query}\n👤 𝗨𝘀𝗲𝗿: ${userName}\n🕒 𝗧𝗶𝗺𝗲: ${timePH}`;
-        return api.sendMessage(text.trim(), threadID, messageID);
+        const replyMessage = `${msg.trim()}━━━━━━━━━━━━━━━━━━\n🔍 𝗤𝘂𝗲𝗿𝘆: ${query}\n👤 𝗨𝘀𝗲𝗿: ${userName}\n🕒 𝗧𝗶𝗺𝗲: ${timePH}`;
+        api.editMessage(replyMessage, info.messageID);
       });
 
-    } catch (err) {
-      console.error("[ytsearch.js] API Error:", err.message || err);
-      return api.sendMessage("🚫 Failed to fetch YouTube results. Please try again later.", threadID, messageID);
+    } catch (error) {
+      console.error("[ytsearch.js] Error:", error);
+      const errMsg = "❌ Error: " + (error.response?.data?.message || error.message || "Failed to search.");
+      api.editMessage(errMsg, info.messageID);
     }
-  }
+  });
 };
