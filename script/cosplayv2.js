@@ -3,75 +3,85 @@ const fs = require("fs-extra");
 const path = require("path");
 
 module.exports.config = {
-  name: "cosplayv2",
-  version: "1.0.0",
-  hasPermission: 0,
-  credits: "Vern",
-  description: "Get a random cosplay video using Haji-Mix API",
-  commandCategory: "fun",
-  usages: "cosplayv2",
-  cooldowns: 5,
+  name: 'cosplayv2',
+  version: '1.0.0',
   role: 0,
-  hasPrefix: true
+  hasPrefix: false,
+  aliases: ['cosplay', 'cosplayvideo'],
+  description: "Get a random cosplay video using Haji-Mix API",
+  usage: "cosplayv2",
+  credits: 'Vern',
+  cooldown: 5
 };
 
 module.exports.run = async function ({ api, event }) {
-  const { threadID, messageID } = event;
+  const threadID = event.threadID;
+  const messageID = event.messageID;
+  const senderID = event.senderID;
   const apiKey = "f810244328efffe65edb02e899789cdc1b5303156dd950a644a6f2637ce564f0";
   const apiUrl = `https://haji-mix.up.railway.app/api/cosplayv2?api_key=${apiKey}`;
 
-  await api.sendMessage("🎬 Fetching a cosplay video... please wait!", threadID, messageID);
+  api.sendMessage("🎬 Fetching a random cosplay video for you...", threadID, async (err, info) => {
+    if (err) return;
 
-  try {
-    const res = await axios.get(apiUrl);
-    const data = res.data?.result;
+    try {
+      const res = await axios.get(apiUrl);
+      const result = res.data?.result;
 
-    let videoUrl = null;
-
-    if (Array.isArray(data) && data.length > 0) {
-      const random = data[Math.floor(Math.random() * data.length)];
-      videoUrl = typeof random === "string" ? random : random.url || random.video || random.link;
-    } else if (typeof data === "string") {
-      videoUrl = data;
-    }
-
-    if (!videoUrl) {
-      return api.sendMessage("⚠️ No valid video URL found.", threadID, messageID);
-    }
-
-    const cacheDir = path.join(__dirname, "cache");
-    await fs.ensureDir(cacheDir);
-    const fileName = `cosplay_${Date.now()}.mp4`;
-    const filePath = path.join(cacheDir, fileName);
-
-    const videoRes = await axios({ method: "GET", url: videoUrl, responseType: "stream" });
-    const writer = fs.createWriteStream(filePath);
-    videoRes.data.pipe(writer);
-
-    writer.on("finish", async () => {
-      const fileSize = fs.statSync(filePath).size;
-      if (fileSize > 25 * 1024 * 1024) {
-        fs.unlinkSync(filePath);
-        return api.sendMessage("⚠️ Video too large to send (>25MB).", threadID, messageID);
+      let videoUrl = null;
+      if (Array.isArray(result) && result.length > 0) {
+        const random = result[Math.floor(Math.random() * result.length)];
+        videoUrl = typeof random === "string" ? random : random.url || random.video || random.link;
+      } else if (typeof result === "string") {
+        videoUrl = result;
       }
 
-      return api.sendMessage(
-        {
-          body: "📹 Here's your cosplay video!",
-          attachment: fs.createReadStream(filePath)
-        },
-        threadID,
-        () => fs.unlinkSync(filePath),
-        messageID
-      );
-    });
+      if (!videoUrl) {
+        return api.editMessage("⚠️ No valid video URL found from the API.", info.messageID);
+      }
 
-    writer.on("error", (err) => {
-      console.error("[cosplayv2] Write error:", err);
-      api.sendMessage("❌ Failed to save video file.", threadID, messageID);
-    });
-  } catch (err) {
-    console.error("[cosplayv2] API Error:", err.response?.data || err.message);
-    return api.sendMessage("🚫 Error while fetching cosplay video. Try again later.", threadID, messageID);
-  }
+      const cachePath = path.join(__dirname, "cache");
+      await fs.ensureDir(cachePath);
+      const fileName = `cosplay_${Date.now()}.mp4`;
+      const filePath = path.join(cachePath, fileName);
+
+      const videoRes = await axios({
+        method: "GET",
+        url: videoUrl,
+        responseType: "stream"
+      });
+
+      const writer = fs.createWriteStream(filePath);
+      videoRes.data.pipe(writer);
+
+      writer.on("finish", async () => {
+        const fileSize = fs.statSync(filePath).size;
+        if (fileSize > 25 * 1024 * 1024) {
+          fs.unlinkSync(filePath);
+          return api.editMessage("⚠️ Video too large to send (>25MB).", info.messageID);
+        }
+
+        api.getUserInfo(senderID, (err, userInfo) => {
+          const userName = userInfo?.[senderID]?.name || "Unknown User";
+          const timePH = new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" });
+
+          const messageData = {
+            body: `📹 𝗖𝗢𝗦𝗣𝗟𝗔𝗬 𝗩𝗜𝗗𝗘𝗢\n━━━━━━━━━━━━━━━━━━\n👤 Requested by: ${userName}\n🕰 Time: ${timePH}`,
+            attachment: fs.createReadStream(filePath)
+          };
+
+          api.sendMessage(messageData, threadID, () => fs.unlinkSync(filePath), info.messageID);
+        });
+      });
+
+      writer.on("error", (err) => {
+        console.error("[cosplayv2] File write error:", err);
+        api.editMessage("❌ Failed to save video file locally.", info.messageID);
+      });
+
+    } catch (error) {
+      console.error("[cosplayv2] API Error:", error.response?.data || error.message);
+      api.editMessage("🚫 Failed to fetch cosplay video. Try again later.", info.messageID);
+    }
+  });
 };
