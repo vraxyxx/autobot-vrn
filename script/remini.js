@@ -26,7 +26,7 @@ module.exports.run = async ({ api, event }) => {
   }
 
   const imageUrl = encodeURIComponent(attachment.url);
-  const apiKey = '0ff49fce-1537-4798-9d90-69db487be671';
+  const apiKey = '4fe7e522-70b7-420b-a746-d7a23db49ee5';
   const apiUrl = `https://kaiz-apis.gleeze.com/api/remini?url=${imageUrl}&stream=true&apikey=${apiKey}`;
 
   try {
