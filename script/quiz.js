@@ -21,6 +21,10 @@ module.exports = {
       const res = await axios.get("https://rapido.zetsu.xyz/api/quiz");
       const { question, options, correct_answer } = res.data;
 
+      if (!question || !Array.isArray(options) || options.length === 0 || !correct_answer) {
+        return api.sendMessage("⚠️ Invalid quiz data received.", threadID, messageID);
+      }
+
       const formattedOptions = options.map((opt, i) => `${i + 1}. ${opt}`).join("\n");
 
       return api.sendMessage(
