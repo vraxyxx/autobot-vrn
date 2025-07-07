@@ -6,7 +6,7 @@
   width: 100vw;
   height: 100vh;
   z-index: -1; /* Behind all content */
-  background-color: #0c0f11; /* near-black for matrix backdrop */
+  background-color: #0a0d0f; /* muted dark */
 }
 
 /* Make sure container is above the matrix background */
@@ -14,15 +14,15 @@
   position: relative;
   padding: 2rem;
   z-index: 1;
-  background: rgba(12, 18, 16, 0.7);
+  background: rgba(15, 18, 20, 0.75);
   border-radius: 12px;
-  box-shadow: 0 0 8px rgba(0, 255, 170, 0.2);
+  border: 1px solid #2e3833;
 }
 
 body {
   margin: 0;
-  background-color: #0c0f11;
-  color: #8effc1;
+  background-color: #0a0d0f;
+  color: #c0cec7;
   font-family: 'Segoe UI', monospace;
 }
 
@@ -30,14 +30,14 @@ body {
   position: relative;
   text-align: center;
   padding-bottom: 1rem;
-  text-shadow: 0 0 3px #2bf8c5;
+  color: #9caea3;
 }
 
 .banner {
   width: 100%;
   height: 200px;
   object-fit: cover;
-  filter: brightness(0.6);
+  filter: brightness(0.5) contrast(0.9);
 }
 
 .profile-pic {
@@ -47,7 +47,7 @@ body {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  border: 2px solid #22d88d;
+  border: 2px solid #3a4b45;
 }
 
 .profile-container {
@@ -60,33 +60,33 @@ body {
   font-weight: 600;
   display: flex;
   align-items: center;
-  animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
+  animation: textFloat 0.8s ease-out forwards, scrollHorizontal 4s ease-in-out infinite alternate;
   opacity: 0;
   animation-delay: 0.1s;
-  color: #a0ffd3;
+  color: #8a9992;
 }
 
 .verified-icon {
   margin-left: 5px;
-  color: #22ffaa;
+  color: #7d8b84;
 }
 
 .github-link {
-  color: #77e6cb;
+  color: #6f7d76;
   text-decoration: none;
   font-size: 0.9rem;
   display: inline-block;
   margin: 5px 0 15px;
-  animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
+  animation: textFloat 0.8s ease-out forwards, scrollHorizontal 4s ease-in-out infinite alternate;
   opacity: 0;
   animation-delay: 0.3s;
 }
 
 .warning {
-  color: #b2ffdd;
+  color: #9eaba6;
   font-size: 0.9rem;
   max-width: 90%;
-  animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
+  animation: textFloat 0.8s ease-out forwards, scrollHorizontal 4s ease-in-out infinite alternate;
   opacity: 0;
   animation-delay: 0.5s;
 }
@@ -99,23 +99,23 @@ body {
 }
 
 .btn {
-  background-color: #33cc99;
+  background-color: #2f3d37;
   border: none;
   padding: 10px 20px;
-  color: #0c0f11;
+  color: #cfd9d2;
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
-  animation: textFloat 1s ease-out forwards;
+  animation: textFloat 0.8s ease-out forwards;
   opacity: 0;
   animation-delay: 1.3s;
 }
 
 .btn-secondary {
-  background-color: #18221c;
-  color: #33cc99;
-  border: 1px solid #33cc99;
-  animation: textFloat 1s ease-out forwards;
+  background-color: transparent;
+  color: #8f9f95;
+  border: 1px solid #3d4943;
+  animation: textFloat 0.8s ease-out forwards;
   opacity: 0;
   animation-delay: 1.3s;
 }
@@ -127,54 +127,54 @@ input {
   padding: 10px;
   border-radius: 8px;
   border: none;
-  background-color: #1e2a24;
-  color: #b8ffe2;
+  background-color: #1a1f1d;
+  color: #cfd9d2;
   resize: none;
   outline: none;
 }
 
 textarea:focus,
 input:focus {
-  border: 1px solid #33cc99;
+  border: 1px solid #3e4c45;
 }
 
 .subtitle {
   font-size: 1.3rem;
   font-weight: 600;
   margin-top: 2rem;
-  animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
+  animation: textFloat 0.8s ease-out forwards, scrollHorizontal 4s ease-in-out infinite alternate;
   opacity: 0;
   animation-delay: 0.7s;
-  color: #8dfcd8;
+  color: #abb8b2;
 }
 
 .terms {
   font-size: 0.9rem;
   margin-top: 1rem;
-  color: #a6fdd6;
-  animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
+  color: #9ba8a1;
+  animation: textFloat 0.8s ease-out forwards, scrollHorizontal 4s ease-in-out infinite alternate;
   opacity: 0;
   animation-delay: 0.9s;
 }
 
 .submit-btn {
-  background-color: #22d88d;
+  background-color: #2f3d37;
   padding: 10px 30px;
   font-weight: bold;
   margin-top: 1rem;
-  animation: textFloat 1s ease-out forwards;
+  animation: textFloat 0.8s ease-out forwards;
   opacity: 0;
   animation-delay: 1.3s;
-  color: #0c0f11;
+  color: #cfd9d2;
   border-radius: 8px;
 }
 
 .footer {
   text-align: center;
   padding: 1rem;
-  color: #6bfac9;
+  color: #88958e;
   font-size: 0.85rem;
-  animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
+  animation: textFloat 0.8s ease-out forwards, scrollHorizontal 4s ease-in-out infinite alternate;
   opacity: 0;
   animation-delay: 1.1s;
 }
@@ -187,7 +187,7 @@ input:focus {
 /* Animations */
 @keyframes textFloat {
   0% {
-    transform: translateY(20px);
+    transform: translateY(10px);
     opacity: 0;
   }
   100% {
@@ -198,9 +198,9 @@ input:focus {
 
 @keyframes scrollHorizontal {
   0% {
-    transform: translateX(-10px);
+    transform: translateX(-4px);
   }
   100% {
-    transform: translateX(10px);
+    transform: translateX(4px);
   }
 }
