@@ -5,33 +5,8 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: -1;
-  background-color: #0d0d0d; /* darker matrix background */
-}
-
-/* Glowing matrix effect */
-#matrix::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 255, 0, 0.1) 0px,
-    rgba(0, 255, 0, 0.05) 1px,
-    transparent 2px
-  );
-  pointer-events: none;
-  animation: flicker 0.2s infinite;
-  mix-blend-mode: overlay;
-}
-
-/* Flicker for matrix glow */
-@keyframes flicker {
-  0%, 100% { opacity: 0.2; }
-  50% { opacity: 0.05; }
+  z-index: -1; /* Behind all content */
+  background-color: #1a001a; /* dark purple fallback background */
 }
 
 /* Make sure container is above the matrix background */
@@ -39,28 +14,30 @@
   position: relative;
   padding: 2rem;
   z-index: 1;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 12px;
+  box-shadow: 0 0 20px #00ffcc;
 }
-
-/* Your original styles below */
 
 body {
   margin: 0;
-  background-color: black;
-  color: #f2e6ff;
-  font-family: 'Poppins', sans-serif;
-  text-shadow: 0 0 5px #00ffcc, 0 0 10px #00ffcc; /* glowing font */
+  background-color: #1a001a;
+  color: #00ffcc;
+  font-family: 'Segoe UI', monospace;
 }
 
 .header {
   position: relative;
   text-align: center;
   padding-bottom: 1rem;
+  text-shadow: 0 0 10px #00ffcc;
 }
 
 .banner {
   width: 100%;
   height: 200px;
   object-fit: cover;
+  filter: brightness(0.7);
 }
 
 .profile-pic {
@@ -70,8 +47,8 @@ body {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  border: 3px solid #00ffff;
-  box-shadow: 0 0 10px #00ffff;
+  border: 3px solid #00ffcc;
+  box-shadow: 0 0 10px #00ffcc;
 }
 
 .profile-container {
@@ -80,7 +57,6 @@ body {
 }
 
 .profile-name {
-  color: #00ffff;
   font-size: 1.5rem;
   font-weight: 600;
   display: flex;
@@ -88,11 +64,13 @@ body {
   animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
   opacity: 0;
   animation-delay: 0.1s;
+  color: #00ffcc;
+  text-shadow: 0 0 5px #00ffcc;
 }
 
 .verified-icon {
   margin-left: 5px;
-  color: #00ffff;
+  color: #00ffcc;
 }
 
 .github-link {
@@ -107,7 +85,7 @@ body {
 }
 
 .warning {
-  color: #FFA500;
+  color: #00ffaa;
   font-size: 0.9rem;
   max-width: 90%;
   animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
@@ -123,28 +101,23 @@ body {
 }
 
 .btn {
-  background-color: #F4E1C1;
+  background-color: #00ffcc;
   border: none;
   padding: 10px 20px;
-  color: black;
+  color: #1a001a;
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
   animation: textFloat 1s ease-out forwards;
   opacity: 0;
   animation-delay: 1.3s;
-  box-shadow: 0 0 10px #ffcc99;
-  transition: 0.3s ease;
-}
-
-.btn:hover {
-  background-color: #ffd9b3;
-  box-shadow: 0 0 20px #ffcc99;
+  box-shadow: 0 0 10px #00ffcc;
 }
 
 .btn-secondary {
-  background-color: #f2e6ff;
-  color: #1a001a;
+  background-color: #1a001a;
+  color: #00ffcc;
+  border: 1px solid #00ffcc;
   animation: textFloat 1s ease-out forwards;
   opacity: 0;
   animation-delay: 1.3s;
@@ -157,10 +130,16 @@ input {
   padding: 10px;
   border-radius: 8px;
   border: none;
-  background-color: #1a1a1a;
+  background-color: rgba(255, 255, 255, 0.05);
   color: #00ffcc;
   resize: none;
-  box-shadow: 0 0 5px #00ffcc;
+  outline: none;
+  box-shadow: 0 0 10px #00ffcc inset;
+}
+
+textarea:focus,
+input:focus {
+  box-shadow: 0 0 12px #00ffcc;
 }
 
 .subtitle {
@@ -176,28 +155,29 @@ input {
 .terms {
   font-size: 0.9rem;
   margin-top: 1rem;
-  color: #cc99ff;
+  color: #00ffaa;
   animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
   opacity: 0;
   animation-delay: 0.9s;
 }
 
 .submit-btn {
-  background-color: #9933ff;
+  background-color: #00ffcc;
   padding: 10px 30px;
   font-weight: bold;
   margin-top: 1rem;
   animation: textFloat 1s ease-out forwards;
   opacity: 0;
   animation-delay: 1.3s;
-  box-shadow: 0 0 10px #9933ff;
-  color: white;
+  color: #1a001a;
+  border-radius: 8px;
+  box-shadow: 0 0 10px #00ffcc;
 }
 
 .footer {
   text-align: center;
   padding: 1rem;
-  color: #aa80ff;
+  color: #00ffcc;
   font-size: 0.85rem;
   animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
   opacity: 0;
@@ -210,7 +190,6 @@ input {
 }
 
 /* Animations */
-
 @keyframes textFloat {
   0% {
     transform: translateY(20px);
