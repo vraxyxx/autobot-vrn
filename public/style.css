@@ -80,7 +80,7 @@ body {
 }
 
 .warning {
-  color: #e0b3ff;
+  color: #FFA500;
   font-size: 0.9rem;
   max-width: 90%;
   animation: textFloat 1s ease-out forwards, scrollHorizontal 3s ease-in-out infinite alternate;
