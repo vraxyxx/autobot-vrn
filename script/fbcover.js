@@ -1,86 +1,73 @@
-const axios = require('axios');
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 
 module.exports.config = {
   name: "fbcover",
   version: "1.0.0",
   role: 0,
-  credits: "vern",
-  description: "Generate a Facebook cover image using the Zetsu API.",
-  usage: "/fbcover <name> | <subname> | <sdt> | <address> | <email> | <uid> | <color>",
-  prefix: true,
-  cooldowns: 5,
-  commandCategory: "Fun"
+  credits: "Vern",
+  description: "Generates a Facebook cover using provided details.",
+  hasPrefix: false,
+  aliases: ["fbcover"],
+  usage: "fbcover <name>|<subname>|<number>|<address>|<email>|<uid>|<color>",
+  cooldown: 5
 };
 
-module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID } = event;
-  const input = args.join(' ').split('|').map(s => s.trim());
-  const prefix = "/"; // Change if your bot uses a dynamic prefix
-
-  if (input.length < 7) {
-    const usageMessage = `════『 𝗙𝗕 𝗖𝗢𝗩𝗘𝗥 』════\n\n` +
-      `⚠️ Please provide all required fields!\n\n` +
-      `📌 Usage: ${prefix}fbcover <name> | <subname> | <sdt> | <address> | <email> | <uid> | <color>\n` +
-      `💬 Example: ${prefix}fbcover Mark | Zuckerberg | n/a | USA | zuck@gmail.com | 4 | Cyan\n\n` +
-      `> Powered by Zetsu FB Cover API`;
-    return api.sendMessage(usageMessage, threadID, messageID);
-  }
-
-  const [name, subname, sdt, address, email, uid, color] = input;
-
+module.exports.run = async function({ api, event, args }) {
   try {
-    // Send loading message first
-    const waitMsg = `════『 𝗙𝗕 𝗖𝗢𝗩𝗘𝗥 』════\n\n` +
-      `🎨 Generating Facebook cover for: "${name} ${subname}"\nPlease wait a moment.`;
-    await api.sendMessage(waitMsg, threadID, messageID);
-
-    // Build API URL
-    const apiUrl = "https://api.zetsu.xyz/canvas/fbcover";
-    const params = {
-      name,
-      subname,
-      sdt,
-      address,
-      email,
-      uid,
-      color
-    };
-    const response = await axios.get(apiUrl, {
-      params
-    });
-
-    let imageUrl = "";
-    if (response.data) {
-      if (typeof response.data === "string" && response.data.startsWith("http")) {
-        imageUrl = response.data;
-      } else if (response.data.url) {
-        imageUrl = response.data.url;
-      } else if (response.data.result) {
-        imageUrl = response.data.result;
-      }
-    }
-
-    if (!imageUrl) {
+    if (!args || args.length === 0) {
       return api.sendMessage(
-        `⚠️ Unable to generate Facebook cover image.`, threadID, messageID
+        "Please provide all details to generate a Facebook cover.\n\nExample:\nfbcover Mark|Zuckerberg|4886|USA|zuck@gmail.com|10092939929|Blue",
+        event.threadID
       );
     }
 
-    // Send the image as an attachment
-    const imageRes = await axios.get(imageUrl, { responseType: "stream" });
+    const details = args.join(" ").split("|");
 
-    return api.sendMessage({
-      body: `════『 𝗙𝗕 𝗖𝗢𝗩𝗘𝗥 』════\n\nHere's your generated Facebook cover!\n\n> Powered by Zetsu`,
-      attachment: imageRes.data
-    }, threadID, messageID);
+    if (details.length < 7) {
+      return api.sendMessage(
+        "Invalid format. Make sure you use '|' to separate each field.\n\nExample:\nfbcover Mark|Zuckerberg|12345|USA|zuck@gmail.com|10092939929|Blue",
+        event.threadID
+      );
+    }
 
+    const [name, subname, sdt, address, email, uid, color] = details.map(d => encodeURIComponent(d.trim()));
+    const apiUrl = `https://api.zetsu.xyz/canvas/fbcover?name=${name}&subname=${subname}&sdt=${sdt}&address=${address}&email=${email}&uid=${uid}&color=${color}&apikey=6fbd0a144a296d257b30a752d4a178a5`;
+    const imagePath = path.join(__dirname, "fbcover.png");
+
+    api.sendMessage("Generating Facebook cover, please wait...", event.threadID);
+
+    const response = await axios({
+      url: apiUrl,
+      method: "GET",
+      responseType: "stream"
+    });
+
+    const writer = fs.createWriteStream(imagePath);
+    response.data.pipe(writer);
+
+    writer.on("finish", async () => {
+      try {
+        await api.sendMessage(
+          {
+            attachment: fs.createReadStream(imagePath)
+          },
+          event.threadID
+        );
+        fs.unlinkSync(imagePath);
+      } catch (sendErr) {
+        console.error("Error sending image:", sendErr);
+        api.sendMessage("Error sending the image.", event.threadID);
+      }
+    });
+
+    writer.on("error", (err) => {
+      console.error("Stream error:", err);
+      api.sendMessage("Error while generating the image. Try again later.", event.threadID);
+    });
   } catch (error) {
-    console.error('❌ Error in fbcover command:', error.message || error);
-
-    const errorMessage = `════『 𝗙𝗕 𝗖𝗢𝗩𝗘𝗥 𝗘𝗥𝗥𝗢𝗥 』════\n\n` +
-      `🚫 Failed to generate Facebook cover.\nReason: ${error.response?.data?.message || error.message || 'Unknown error'}\n\n` +
-      `> Please try again later.`;
-
-    return api.sendMessage(errorMessage, threadID, messageID);
+    console.error("General error:", error);
+    api.sendMessage("An unexpected error occurred. Please try again later.", event.threadID);
   }
 };
