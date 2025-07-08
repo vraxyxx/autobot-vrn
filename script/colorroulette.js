@@ -1,59 +1,53 @@
+const axios = require("axios");
+
 module.exports.config = {
-    name: "colorroulette",
-    version: "1.0.0",
-    role: 0,
-    info: "Bet on your favorite color and see if you win!",
-    usage: "colorroulette [color] [amount]",
-    credits: "Vern",
-    cd: 0
+  name: "colorroulette",
+  version: "1.0.0",
+  role: 0,
+  hasPrefix: false,
+  aliases: ["roulette", "colorbet"],
+  description: "Bet on your favorite color and try your luck!",
+  usage: "colorroulette [color] [amount]",
+  credits: "Vern",
+  cooldown: 2
 };
 
-module.exports.run = async ({ api, event, args, Currencies }) => {
-    const { threadID, messageID, senderID } = event;
+module.exports.run = async function ({ api, event, args, Currencies }) {
+  const { threadID, messageID, senderID } = event;
+  const colors = ["red", "blue", "green", "yellow", "orange", "purple", "pink"];
 
-    const colors = ["red", "blue", "green", "yellow", "orange", "purple", "pink"];
+  const selectedColor = args[0]?.toLowerCase();
+  const betAmount = parseInt(args[1]);
 
-    if (!args[0] || !colors.includes(args[0])) {
-        api.sendMessage(`Invalid color. Please select one of the following colors to bet on: ${colors.join(", ")}.`, threadID, messageID);
-        return;
-    }
+  // Validate color
+  if (!selectedColor || !colors.includes(selectedColor)) {
+    return api.sendMessage(`🎨 Invalid color!\nChoose one: ${colors.join(", ")}`, threadID, messageID);
+  }
 
-    if (!args[1] || isNaN(args[1]) || parseInt(args[1]) <= 0) {
-        api.sendMessage('Invalid amount. Please specify a valid amount to bet.', threadID, messageID);
-        return;
-    }
+  // Validate amount
+  if (!betAmount || isNaN(betAmount) || betAmount <= 0) {
+    return api.sendMessage(`💰 Invalid amount!\nUsage: colorroulette [color] [amount]`, threadID, messageID);
+  }
 
-    const userData = await Currencies.getData(senderID);
-    const userMoney = userData.money;
+  // Check user balance
+  const userData = await Currencies.getData(senderID);
+  if (userData.money < betAmount) {
+    return api.sendMessage(`❌ You don't have enough balance to bet $${betAmount}`, threadID, messageID);
+  }
 
-    const selectedColor = args[0];
-    const amount = parseInt(args[1]);
+  const winningColor = colors[Math.floor(Math.random() * colors.length)];
 
-    if (userMoney < amount) {
-        return api.sendMessage(`Your balance is not enough to place this bet`, threadID, messageID);
-    }
+  let resultMessage = "";
+  let winnings = 0;
 
-    const winningColor = colors[Math.floor(Math.random() * colors.length)];
+  if (selectedColor === winningColor) {
+    winnings = betAmount * 3;
+    await Currencies.increaseMoney(senderID, winnings);
+    resultMessage = `🎉 You WON!\nColor: ${winningColor}\nPayout: $${winnings.toLocaleString()}`;
+  } else {
+    await Currencies.decreaseMoney(senderID, betAmount);
+    resultMessage = `😢 You LOST!\nWinning Color: ${winningColor}\nYou lost $${betAmount.toLocaleString()}`;
+  }
 
-    let winnings = 0;
-    let resultMessage = '';
-
-    if (selectedColor === winningColor) {
-        winnings = amount * 3; 
-        resultMessage = `🎉 Congratulations! ${winningColor} is the winning color! You won $${winnings.toLocaleString()
-        }`;
-    } else {
-        winnings = -amount; 
-        resultMessage = `😔 Sorry, ${winningColor} is the winning color. You lost $${amount.toLocaleString()}`;
-    }
-
-    const newBalance = userMoney + winnings;
-
-    if (winnings > 0) {
-        await Currencies.increaseMoney(senderID, winnings);
-    } else if (winnings < 0) {
-        await Currencies.decreaseMoney(senderID, -winnings);
-    }
-
-    api.sendMessage(resultMessage, threadID, messageID);
+  return api.sendMessage(resultMessage, threadID, messageID);
 };
