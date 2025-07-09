@@ -1,44 +1,45 @@
 const axios = require("axios");
 
-module.exports = {
-  config: {
-    name: "aesthetic",
-    aliases: ["aestext"],
-    version: "1.0",
-    role: 0,
-    author: "Vern",
-    countDown: 3,
-    longDescription: "Generate aesthetic text image with your custom input.",
-    category: "text",
-    guide: {
-      en: "{pn} <text> | <author> | <color>\n\nExample:\n{pn} hello world | cc | white"
-    }
-  },
+module.exports.config = {
+  name: "aesthetic",
+  version: "1.0.0",
+  role: 0,
+  credits: "Vern",
+  aliases: ["aestext"],
+  countDown: 3,
+  description: "Generate aesthetic text image with your custom input.",
+  category: "text",
+  usages: "<text> | <author> | <color>",
+  cooldown: 3
+};
 
-  onStart: async function ({ message, args }) {
-    const input = args.join(" ").split("|").map(i => i.trim());
+module.exports.run = async ({ api, event, args }) => {
+  const { threadID, messageID } = event;
 
-    const text = input[0];
-    const author = input[1] || "anonymous";
-    const color = input[2] || "white";
+  const input = args.join(" ").split("|").map(item => item.trim());
+  const text = input[0];
+  const author = input[1] || "anonymous";
+  const color = input[2] || "white";
 
-    if (!text) {
-      return message.reply("⚠️ Please provide some text.\n\nUsage: /aesthetic <text> | <author> | <color>");
-    }
+  if (!text) {
+    return api.sendMessage(
+      "⚠️ Please provide some text.\n\nUsage:\naesthetic <text> | <author> | <color>\n\nExample:\naesthetic Hello World | cc | white",
+      threadID,
+      messageID
+    );
+  }
 
-    const apiUrl = `https://jonell01-ccprojectsapihshs.hf.space/api/aesthetic?text=${encodeURIComponent(text)}&author=${encodeURIComponent(author)}&color=${encodeURIComponent(color)}`;
+  const apiUrl = `https://jonell01-ccprojectsapihshs.hf.space/api/aesthetic?text=${encodeURIComponent(text)}&author=${encodeURIComponent(author)}&color=${encodeURIComponent(color)}`;
 
-    try {
-      const imageStream = await global.utils.getStreamFromURL(apiUrl);
+  try {
+    const imageStream = await global.utils.getStreamFromURL(apiUrl);
 
-      return message.reply({
-        body: "✨ Aesthetic image generated:",
-        attachment: imageStream
-      });
-
-    } catch (err) {
-      console.error(err.message);
-      return message.reply("❌ Failed to generate aesthetic image. Please check your input or try again later.");
-    }
+    return api.sendMessage({
+      body: "✨ Aesthetic image generated:",
+      attachment: imageStream
+    }, threadID, messageID);
+  } catch (err) {
+    console.error("Aesthetic API Error:", err.message);
+    return api.sendMessage("❌ Failed to generate aesthetic image. Please check your input or try again later.", threadID, messageID);
   }
 };
