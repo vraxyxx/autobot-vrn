@@ -2,44 +2,30 @@ const axios = require("axios");
 
 module.exports.config = {
   name: "aesthetic",
-  version: "1.0.0",
+  version: "1.0.1",
   role: 0,
   credits: "Vern",
-  aliases: ["aestext"],
-  countDown: 3,
-  description: "Generate aesthetic text image with your custom input.",
-  category: "text",
-  usages: "<text> | <author> | <color>",
+  aliases: ["aestpic", "aestimg"],
+  description: "Fetch a random aesthetic image.",
+  category: "image",
+  usages: "",
   cooldown: 3
 };
 
-module.exports.run = async ({ api, event, args }) => {
+module.exports.run = async ({ api, event }) => {
   const { threadID, messageID } = event;
 
-  const input = args.join(" ").split("|").map(item => item.trim());
-  const text = input[0];
-  const author = input[1] || "anonymous";
-  const color = input[2] || "white";
-
-  if (!text) {
-    return api.sendMessage(
-      "⚠️ Please provide some text.\n\nUsage:\naesthetic <text> | <author> | <color>\n\nExample:\naesthetic Hello World | cc | white",
-      threadID,
-      messageID
-    );
-  }
-
-  const apiUrl = `https://jonell01-ccprojectsapihshs.hf.space/api/aesthetic?text=${encodeURIComponent(text)}&author=${encodeURIComponent(author)}&color=${encodeURIComponent(color)}`;
+  const apiUrl = `https://jonell01-ccprojectsapihshs.hf.space/api/aesthetic/random`;
 
   try {
-    const imageStream = await global.utils.getStreamFromURL(apiUrl);
+    const imgStream = await global.utils.getStreamFromURL(apiUrl);
 
     return api.sendMessage({
-      body: "✨ Aesthetic image generated:",
-      attachment: imageStream
+      body: "✨ Here's a random aesthetic image:",
+      attachment: imgStream
     }, threadID, messageID);
   } catch (err) {
-    console.error("Aesthetic API Error:", err.message);
-    return api.sendMessage("❌ Failed to generate aesthetic image. Please check your input or try again later.", threadID, messageID);
+    console.error("Random Aesthetic Error:", err.message);
+    return api.sendMessage("❌ Failed to fetch aesthetic image. Please try again later.", threadID, messageID);
   }
 };
