@@ -1,71 +1,53 @@
-const axios = require('axios');
+const axios = require("axios");
 
 module.exports.config = {
   name: "gdrive",
-  version: "1.0.1",
+  version: "1.0",
   role: 0,
-  credits: "vern",
-  description: "Get direct download link from a Google Drive link or image reply.",
-  usage: "Reply to GDrive link or image, then type gdrive",
-  prefix: true,
-  cooldowns: 3,
-  commandCategory: "utility"
+  author: "Jonell01",
+  credits: "Jonell01",
+  aliases: ["driveinfo", "gdrivedl"],
+  countDown: 5,
+  longDescription: "Extract Google Drive file information or direct download link.",
+  category: "tools",
+  usages: "< reply to Google Drive link >",
+  cooldown: 5
 };
 
-module.exports.run = async function ({ api, event }) {
+module.exports.run = async ({ api, event }) => {
   const { threadID, messageID, messageReply } = event;
 
-  // Check if user replied to a message
-  if (!messageReply) {
-    return api.sendMessage("❌ | Please reply to a Google Drive link or image containing the link.", threadID, messageID);
+  // Validate reply and URL
+  if (
+    !messageReply ||
+    !messageReply.body ||
+    !messageReply.body.includes("drive.google.com")
+  ) {
+    return api.sendMessage("❌ Please reply to a valid Google Drive link.", threadID, messageID);
   }
 
-  // Try to extract URL from replied message
-  let url = null;
-
-  // From text
-  if (messageReply.body && messageReply.body.includes("drive.google.com")) {
-    url = messageReply.body.trim();
-  }
-
-  // From image caption or alt
-  if (!url && messageReply.attachments && messageReply.attachments.length > 0) {
-    const imgAttachment = messageReply.attachments.find(att => att.type === "photo");
-    if (imgAttachment?.url && imgAttachment.url.includes("drive.google.com")) {
-      url = imgAttachment.url;
-    }
-  }
-
-  if (!url) {
-    return api.sendMessage("❌ | No valid Google Drive link found in the reply. Please try again.", threadID, messageID);
-  }
-
-  // Send loading message
-  await api.sendMessage("⏳ | Fetching Google Drive direct link...", threadID, messageID);
+  const driveUrl = encodeURIComponent(messageReply.body.trim());
+  const apiUrl = `https://jonell01-ccprojectsapihshs.hf.space/api/gdrive?url=${driveUrl}`;
 
   try {
-    const apiUrl = `https://jonell01-ccprojectsapihshs.hf.space/api/gdrive?url=${encodeURIComponent(url)}`;
-    const response = await axios.get(apiUrl);
+    api.sendMessage("🔍 Fetching Google Drive file info...", threadID, messageID);
 
-    let resultMsg = `════『 𝗚𝗢𝗢𝗚𝗟𝗘 𝗗𝗥𝗜𝗩𝗘 』════\n\n`;
+    const res = await axios.get(apiUrl);
+    const data = res.data;
 
-    if (response.data?.result) {
-      resultMsg += `✅ | Direct Download Link:\n${response.data.result}`;
-    } else if (typeof response.data === "string") {
-      resultMsg += response.data;
-    } else {
-      resultMsg += "⚠️ | No direct link returned by API.";
+    if (data.error) {
+      return api.sendMessage(`❌ Error: ${data.error}`, threadID, messageID);
     }
 
-    resultMsg += `\n\n> Powered by Jonell01 GDrive API`;
-    return api.sendMessage(resultMsg, threadID, messageID);
+    let replyMsg = `📂 Google Drive File Info:\n`;
+    if (data.name) replyMsg += `📄 Name: ${data.name}\n`;
+    if (data.size) replyMsg += `📦 Size: ${data.size}\n`;
+    if (data.mimeType) replyMsg += `📁 Type: ${data.mimeType}\n`;
+    if (data.downloadUrl) replyMsg += `🔗 Direct Link: ${data.downloadUrl}`;
 
-  } catch (error) {
-    console.error("❌ Error in gdrive command:", error);
-    return api.sendMessage(
-      `❌ | Failed to generate download link.\nReason: ${error.response?.data?.message || error.message || "Unknown error"}`,
-      threadID,
-      messageID
-    );
+    return api.sendMessage(replyMsg, threadID, messageID);
+  } catch (err) {
+    console.error("gdrive error:", err.message);
+    return api.sendMessage("❌ Failed to fetch Drive file info. Please check the link or try again later.", threadID, messageID);
   }
 };
