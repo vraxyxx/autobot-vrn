@@ -1,43 +1,68 @@
 const axios = require("axios");
 
-module.exports.config = {
-  name: "fbstalk",
-  version: "1.0.0",
-  role: 0,
-  credits: "Vern",
-  description: "Get information about a Facebook user by UID",
-  usage: "[uid]",
-  cooldown: 5,
-  hasPrefix: true,
-  aliases: ["stalk", "fbinfo"]
-};
+module.exports = {
+  config: {
+    name: "stalkfb",
+    aliases: ["fbstalk", "facebookstalk"],
+    version: "1.0",
+    role: 0,
+    author: "Vern",
+    countDown: 5,
+    longDescription: "Stalk Facebook user using UID and name.",
+    category: "info",
+    guide: {
+      en: "{pn} <uid> | <name>\n\nExample:\n{pn} 100036956043695 | Harold Hutchins"
+    }
+  },
 
-module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID } = event;
-  const uid = args[0];
+  onStart: async function ({ message, args }) {
+    const input = args.join(" ").split("|").map(i => i.trim());
 
-  if (!uid || isNaN(uid)) {
-    return api.sendMessage("❌ Please provide a valid Facebook UID.\n\nExample:\n/fbstalk 1000123456789", threadID, messageID);
-  }
+    const uid = input[0];
+    const name = input[1];
 
-  try {
-    const res = await axios.get(`https://hiroshi-api.onrender.com/fbtool/stalk?uid=${uid}`);
-    const info = res.data;
-
-    if (!info || !info.name) {
-      return api.sendMessage("❌ Could not retrieve user information.", threadID, messageID);
+    if (!uid || !name) {
+      return message.reply("⚠️ Please provide both the Facebook UID and name.\n\nExample:\n/stalkfb 100036956043695 | Harold Hutchins");
     }
 
-    const msg = `👤 𝗙𝗮𝗰𝗲𝗯𝗼𝗼𝗸 𝗨𝘀𝗲𝗿 𝗜𝗻𝗳𝗼\n━━━━━━━━━━━━━━\n` +
-      `• 🧑 Name: ${info.name}\n` +
-      `• 🆔 UID: ${info.uid}\n` +
-      (info.followers ? `• 👥 Followers: ${info.followers}\n` : "") +
-      (info.created ? `• 📆 Account Created: ${info.created}\n` : "") +
-      (info.link ? `• 🔗 Profile: ${info.link}` : "");
+    const apiUrl = `https://jonell01-ccprojectsapihshs.hf.space/api/stalkfb?id=${encodeURIComponent(uid)}&name=${encodeURIComponent(name)}`;
 
-    return api.sendMessage(msg, threadID, messageID);
-  } catch (error) {
-    console.error("❌ fbstalk error:", error.message || error);
-    return api.sendMessage("❌ Error fetching Facebook data.\nPlease make sure the UID is public and valid.", threadID, messageID);
+    try {
+      const { data } = await axios.get(apiUrl);
+
+      if (data.error) {
+        return message.reply(`❌ API Error: ${data.error}`);
+      }
+
+      const {
+        name: fullName,
+        uid: fbUid,
+        username,
+        link,
+        followers,
+        friends,
+        profile,
+        cover,
+        bio
+      } = data;
+
+      const info = 
+`👤 Name: ${fullName}
+🆔 UID: ${fbUid}
+🔗 Username: ${username || "N/A"}
+🌐 Profile: ${link}
+👥 Friends: ${friends}
+👣 Followers: ${followers}
+📝 Bio: ${bio || "N/A"}`;
+
+      return message.reply({
+        body: info,
+        attachment: await global.utils.getStreamFromURL(profile)
+      });
+
+    } catch (err) {
+      console.error(err.message);
+      return message.reply("❌ Failed to fetch Facebook profile info. Please try again later.");
+    }
   }
 };
