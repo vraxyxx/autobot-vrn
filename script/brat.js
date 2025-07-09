@@ -3,77 +3,42 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "brat",
-    version: "1.0.1",
-    author: "vern",
-    description: "Generate brat style text image.",
-    cooldowns: 5,
-    dependencies: {
-      axios: ""
+    aliases: ["bratcaption", "brattalk"],
+    version: "1.0",
+    role: 0,
+    author: "Jonell01",
+    countDown: 3,
+    longDescription: "Generate brat-style caption using input text.",
+    category: "text",
+    guide: {
+      en: "{pn} <text> | <type>\n\nExample:\n{pn} you again? | direct"
     }
   },
 
-  run: async function({ api, event, args }) {
-    const { threadID, messageID } = event;
+  onStart: async function ({ message, args }) {
+    const input = args.join(" ").split("|").map(i => i.trim());
 
-    if (!args.length) {
-      return api.sendMessage(
-        "❗ Please provide text to generate.\n\nUsage: /brat [text]",
-        threadID,
-        messageID
-      );
+    const text = input[0];
+    const type = input[1] || "direct";
+
+    if (!text) {
+      return message.reply("⚠️ Please provide text for the brat caption.\n\nUsage:\n/brat <text> | <type>\nTypes: direct, sarcasm, savage, etc.");
     }
 
-    const text = encodeURIComponent(args.join(" "));
+    const apiUrl = `https://jonell01-ccprojectsapihshs.hf.space/api/brat?text=${encodeURIComponent(text)}&type=${encodeURIComponent(type)}`;
 
     try {
-      const response = await axios.get(`https://api.ferdev.my.id/maker/brat?text=${text}`);
-      const data = response.data;
+      const { data } = await axios.get(apiUrl);
 
-      if (!data || !data.result) {
-        return api.sendMessage(
-          "❌ Failed to generate brat text image.",
-          threadID,
-          messageID
-        );
+      if (data.error) {
+        return message.reply(`❌ API Error: ${data.error}`);
       }
 
-      const imageUrl = data.result;
+      return message.reply(`💬 Brat says: ${data.result || "No response"}`);
 
-      if (!global.utils || typeof global.utils.getStream !== "function") {
-        return api.sendMessage(
-          "❌ Image streaming utility not found. Please make sure 'global.utils.getStream' is available.",
-          threadID,
-          messageID
-        );
-      }
-
-      let attachment;
-      try {
-        attachment = await global.utils.getStream(imageUrl);
-      } catch (imgErr) {
-        return api.sendMessage(
-          `❌ Unable to fetch brat image from the provided URL.\nError: ${imgErr.message}`,
-          threadID,
-          messageID
-        );
-      }
-
-      return api.sendMessage(
-        {
-          body: "✅ Brat text image generated:",
-          attachment
-        },
-        threadID,
-        messageID
-      );
-
-    } catch (error) {
-      console.error("Error in brat command:", error);
-      api.sendMessage(
-        `❌ Failed to generate brat text image.\nError: ${error.message}`,
-        threadID,
-        messageID
-      );
+    } catch (err) {
+      console.error(err.message);
+      return message.reply("❌ Failed to generate brat caption. Please try again later.");
     }
   }
 };
