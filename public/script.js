@@ -34,7 +34,7 @@ setInterval(measurePing, 1000);
 function updateTime() {
   const now = new Date();
   const options = {
-    timeZone: 'Asia/Dhaka',
+    timeZone: 'Asia/Manila',
     hour12: true,
     hour: 'numeric',
     minute: 'numeric',
